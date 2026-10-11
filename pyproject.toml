@@ -1,5 +1,5 @@
 [project]
-name = "VO2-max-estimator"
+name = "vo2-max-estimator"
 version = "0.1.0"
 description = "UNA Watch app for estimating VO2 max"
 requires-python = ">=3.12,<3.13"
