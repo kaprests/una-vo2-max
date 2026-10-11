@@ -105,23 +105,20 @@ void Vo2MaxEstimator::addSample(const Sample& s)
     }
 }
 
-Vo2MaxEstimator::Result Vo2MaxEstimator::result(float maxHrBpm) const
+Vo2Result Vo2MaxEstimator::result(float maxHrBpm) const
 {
-    Result r;
+    using Reason = Vo2Result::Reason;
+    using Confidence = Vo2Result::Confidence;
+
+    Vo2Result r;
     r.steadySec = static_cast<uint16_t>(std::min<uint32_t>(mFit.n, std::numeric_limits<uint16_t>::max()));
-    r.hrMin     = mFit.yMin;
-    r.hrMax     = mFit.yMax;
 
     const auto fail = [&r](Reason reason) { r.reason = reason; return r; };
 
     if (maxHrBpm < mConfig.minMaxHr) {
         return fail(Reason::NO_MAX_HR);
     }
-    r.hrRangeFrac = (r.hrMax - r.hrMin) / maxHrBpm;
-
-    const auto meets = [&r](const Config::Level& l) {
-        return r.steadySec >= l.steadySec && r.hrRangeFrac >= l.hrRangeFrac && r.r2 >= l.r2;
-    };
+    r.hrRangeFrac = (mFit.yMax - mFit.yMin) / maxHrBpm;
 
     if (mFit.n < std::max<uint32_t>(mConfig.minimum.steadySec, 2)) {
         return fail(Reason::TOO_SHORT);
@@ -130,21 +127,23 @@ Vo2MaxEstimator::Result Vo2MaxEstimator::result(float maxHrBpm) const
         return fail(Reason::LOW_HR_RANGE);
     }
 
-    r.slope = static_cast<float>(mFit.slope());
-    r.r2    = static_cast<float>(mFit.r2());
-    if (r.slope <= 0.0f) {
+    const double slope = mFit.slope();
+    r.r2 = static_cast<float>(mFit.r2());
+    if (slope <= 0.0) {
         return fail(Reason::BAD_SLOPE);
     }
     if (r.r2 < mConfig.minimum.r2) {
         return fail(Reason::POOR_FIT);
     }
 
-    r.vMaxMps = static_cast<float>((maxHrBpm - mFit.intercept()) / mFit.slope());
-    const float vo2 = acsmVo2(r.vMaxMps);
+    const float vo2 = acsmVo2(static_cast<float>((maxHrBpm - mFit.intercept(slope)) / slope));
     if (vo2 < kMinVo2 || vo2 > kMaxVo2) {
         return fail(Reason::OUT_OF_RANGE);
     }
 
+    const auto meets = [&r](const Config::Level& l) {
+        return r.steadySec >= l.steadySec && r.hrRangeFrac >= l.hrRangeFrac && r.r2 >= l.r2;
+    };
     r.vo2max     = vo2;
     r.reason     = Reason::OK;
     r.confidence = meets(mConfig.high)   ? Confidence::HIGH

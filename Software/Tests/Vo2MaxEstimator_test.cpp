@@ -51,11 +51,9 @@ TEST(Vo2MaxEstimator, CleanRunGivesExpectedVo2WithHighConfidence)
     runPaces(est, kPaces, 600);
 
     const auto r = est.result(kMaxHr);
-    EXPECT_EQ(r.reason, Est::Reason::OK);
-    EXPECT_EQ(r.confidence, Est::Confidence::HIGH);
+    EXPECT_EQ(r.reason, Vo2Result::Reason::OK);
+    EXPECT_EQ(r.confidence, Vo2Result::Confidence::HIGH);
     EXPECT_NEAR(r.vo2max, kExpectedVo2, 0.1f);
-    EXPECT_NEAR(r.vMaxMps, 4.8f, 0.01f);
-    EXPECT_NEAR(r.slope, kB, 0.01f);
     EXPECT_NEAR(r.r2, 1.0f, 1e-4f);
 }
 
@@ -95,7 +93,7 @@ TEST(Vo2MaxEstimator, NoisyDataStillEstimates)
     }
 
     const auto r = est.result(kMaxHr);
-    EXPECT_EQ(r.reason, Est::Reason::OK);
+    EXPECT_EQ(r.reason, Vo2Result::Reason::OK);
     EXPECT_LT(r.r2, 0.99f);
     EXPECT_NEAR(r.vo2max, kExpectedVo2, 3.0f);
 }
@@ -105,8 +103,8 @@ TEST(Vo2MaxEstimator, MaxHrNotSet)
     Est est;
     runPaces(est, kPaces, 600);
     const auto r = est.result(0.0f);
-    EXPECT_EQ(r.reason, Est::Reason::NO_MAX_HR);
-    EXPECT_EQ(r.confidence, Est::Confidence::NONE);
+    EXPECT_EQ(r.reason, Vo2Result::Reason::NO_MAX_HR);
+    EXPECT_EQ(r.confidence, Vo2Result::Confidence::NONE);
     EXPECT_EQ(r.vo2max, 0.0f);
 }
 
@@ -114,14 +112,14 @@ TEST(Vo2MaxEstimator, TooShort)
 {
     Est est;
     runPaces(est, {3.0f}, 200);
-    EXPECT_EQ(est.result(kMaxHr).reason, Est::Reason::TOO_SHORT);
+    EXPECT_EQ(est.result(kMaxHr).reason, Vo2Result::Reason::TOO_SHORT);
 }
 
 TEST(Vo2MaxEstimator, SinglePaceHasTooLittleHrRange)
 {
     Est est;
     runPaces(est, {3.0f}, 1200);
-    EXPECT_EQ(est.result(kMaxHr).reason, Est::Reason::LOW_HR_RANGE);
+    EXPECT_EQ(est.result(kMaxHr).reason, Vo2Result::Reason::LOW_HR_RANGE);
 }
 
 TEST(Vo2MaxEstimator, HillsAreIgnored)
@@ -185,14 +183,14 @@ TEST(Vo2MaxEstimator, HrFallingWithSpeedIsRejected)
             est.addSample(sample(v, 220.0f - kB * v));
         }
     }
-    EXPECT_EQ(est.result(kMaxHr).reason, Est::Reason::BAD_SLOPE);
+    EXPECT_EQ(est.result(kMaxHr).reason, Vo2Result::Reason::BAD_SLOPE);
 }
 
 TEST(Vo2MaxEstimator, CustomConfigAcceptsShortRun)
 {
     Est defaults;
     runPaces(defaults, {2.8f, 3.4f}, 150);
-    EXPECT_EQ(defaults.result(kMaxHr).confidence, Est::Confidence::NONE);
+    EXPECT_EQ(defaults.result(kMaxHr).confidence, Vo2Result::Confidence::NONE);
 
     Est::Config cfg;
     cfg.settleSec = 0;
@@ -201,7 +199,7 @@ TEST(Vo2MaxEstimator, CustomConfigAcceptsShortRun)
     runPaces(est, {2.8f, 3.4f}, 150);
 
     const auto r = est.result(kMaxHr);
-    EXPECT_EQ(r.confidence, Est::Confidence::LOW);
+    EXPECT_EQ(r.confidence, Vo2Result::Confidence::LOW);
     EXPECT_NEAR(r.vo2max, kExpectedVo2, 0.1f);
 }
 

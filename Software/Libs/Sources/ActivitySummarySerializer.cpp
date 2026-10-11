@@ -199,9 +199,11 @@ bool ActivitySummarySerializer::load(ActivitySummary& summary)
 
     uint8_t confidence = 0;
     uint8_t reason     = 0;
-    if (reader.get("vo2.confidence", confidence) && reader.get("vo2.reason", reason)) {
-        summary.vo2.confidence = static_cast<Vo2Summary::Confidence>(confidence);
-        summary.vo2.reason     = static_cast<Vo2Summary::Reason>(reason);
+    if (reader.get("vo2.confidence", confidence) && reader.get("vo2.reason", reason)
+            && confidence <= static_cast<uint8_t>(Vo2Result::Confidence::HIGH)
+            && reason <= static_cast<uint8_t>(Vo2Result::Reason::OUT_OF_RANGE)) {
+        summary.vo2.confidence = static_cast<Vo2Result::Confidence>(confidence);
+        summary.vo2.reason     = static_cast<Vo2Result::Reason>(reason);
         reader.get("vo2.vo2max",     summary.vo2.vo2max);
         reader.get("vo2.steady_sec", summary.vo2.steadySec);
         reader.get("vo2.hr_range",   summary.vo2.hrRangeFrac);

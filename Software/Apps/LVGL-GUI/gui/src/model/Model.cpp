@@ -325,11 +325,10 @@ bool Model::customMessageHandler(SDK::MessageBase* message)
             mActivitySummary = static_cast<CustomMessage::Summary*>(message)->summary;
             break;
 
-        case CustomMessage::LATEST_VO2: {
-            const ActivitySummary* s = static_cast<CustomMessage::Summary*>(message)->summary;
-            mLatestVo2 = s && s->vo2.confidence != Vo2Summary::Confidence::NONE ? s : nullptr;
+        case CustomMessage::LATEST_VO2:
+            mLatestVo2 = static_cast<CustomMessage::Summary*>(message)->summary;
             modelListener->onLatestVo2();
-        } break;
+            break;
 
         case CustomMessage::ACCESSORY_STATUS: {
             auto* msg = static_cast<CustomMessage::AccessoryStatusUpd*>(message);

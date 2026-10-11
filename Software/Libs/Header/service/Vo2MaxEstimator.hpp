@@ -18,6 +18,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "Vo2Result.hpp"
+
 class Vo2MaxEstimator
 {
 public:
@@ -53,40 +55,15 @@ public:
         bool    gradeValid = false;
     };
 
-    enum class Confidence : uint8_t { NONE, LOW, MEDIUM, HIGH };
-
-    enum class Reason : uint8_t {
-        OK,
-        NO_MAX_HR,
-        TOO_SHORT,     ///< Not enough steady running.
-        LOW_HR_RANGE,  ///< Paces too similar.
-        POOR_FIT,      ///< HR does not follow speed.
-        BAD_SLOPE,     ///< HR does not rise with speed.
-        OUT_OF_RANGE,  ///< Result not physiological.
-    };
-
-    struct Result {
-        Confidence confidence  = Confidence::NONE;
-        Reason     reason      = Reason::TOO_SHORT;
-        float      vo2max      = 0.0f; ///< ml/kg/min
-        float      vMaxMps     = 0.0f; ///< Speed at max HR.
-        uint16_t   steadySec   = 0;
-        float      hrMin       = 0.0f;
-        float      hrMax       = 0.0f;
-        float      hrRangeFrac = 0.0f;
-        float      r2          = 0.0f;
-        float      slope       = 0.0f; ///< bpm per m/s
-    };
-
     static constexpr std::size_t kWindowSec  = 30;
     static constexpr uint8_t     kMaxHrTrust = 3; ///< Trust levels 1..3 are valid.
 
     Vo2MaxEstimator();
     explicit Vo2MaxEstimator(const Config& config);
 
-    void   reset();
-    void   addSample(const Sample& s);
-    Result result(float maxHrBpm) const;
+    void      reset();
+    void      addSample(const Sample& s);
+    Vo2Result result(float maxHrBpm) const;
 
 private:
     /// Least-squares fit of y on x, accumulated as running sums.
@@ -100,8 +77,8 @@ private:
         double varY() const  { return syy - sy * sy / n; }
         double covXY() const { return sxy - sx * sy / n; }
         double slope() const { return covXY() / varX(); }
-        double intercept() const { return (sy - slope() * sx) / n; }
         double r2() const    { return covXY() * covXY() / (varX() * varY()); }
+        double intercept(double slope) const { return (sy - slope * sx) / n; }
     };
 
     bool usable(const Sample& s) const;

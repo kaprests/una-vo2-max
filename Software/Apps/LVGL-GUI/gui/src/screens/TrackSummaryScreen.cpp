@@ -12,17 +12,15 @@
 #include "gui/Format.hpp"
 #include "gui/Strings.hpp"
 
-#include <ctime>
-
 using namespace SDK::GUI;
 using F = Theme::Font;
 
 namespace
 {
-const char* vo2Status(const Vo2Summary& v)
+const char* vo2Status(const Vo2Result& v)
 {
-    using C = Vo2Summary::Confidence;
-    using R = Vo2Summary::Reason;
+    using C = Vo2Result::Confidence;
+    using R = Vo2Result::Reason;
     switch (v.confidence) {
         case C::HIGH:   return "High";
         case C::MEDIUM: return "Medium";
@@ -30,7 +28,7 @@ const char* vo2Status(const Vo2Summary& v)
         case C::NONE:   break;
     }
     switch (v.reason) {
-        case R::NO_MAX_HR:    return "Set max HR";
+        case R::NO_MAX_HR:    return Strings::kNoMaxHr;
         case R::LOW_HR_RANGE: return "Vary pace more";
         case R::POOR_FIT:
         case R::BAD_SLOPE:    return "HR off pace";
@@ -39,13 +37,13 @@ const char* vo2Status(const Vo2Summary& v)
     }
 }
 
-uint32_t vo2StatusColor(Vo2Summary::Confidence c)
+uint32_t vo2StatusColor(Vo2Result::Confidence c)
 {
     switch (c) {
-        case Vo2Summary::Confidence::HIGH:   return Color::GREEN;
-        case Vo2Summary::Confidence::MEDIUM: return Color::YELLOW;
-        case Vo2Summary::Confidence::LOW:    return Color::YELLOW_DARK;
-        default:                             return Color::GRAY;
+        case Vo2Result::Confidence::HIGH:   return Color::GREEN;
+        case Vo2Result::Confidence::MEDIUM: return Color::YELLOW;
+        case Vo2Result::Confidence::LOW:    return Color::YELLOW_DARK;
+        default:                            return Color::GRAY;
     }
 }
 } // namespace
@@ -158,19 +156,15 @@ void TrackSummaryScreen::onShow()
     }
     Theme::setHidden(mVo2Date, !(latest && s));
     if (latest && s) {
-        static constexpr const char* kMonths[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-        std::tm local{};
-        localtime_r(&s->utc, &local);
-        lv_label_set_text_fmt(mVo2Date, "%d %s %d", local.tm_mday, kMonths[local.tm_mon], 1900 + local.tm_year);
+        char buf[16];
+        Fmt::date(buf, sizeof(buf), s->utc);
+        lv_label_set_text(mVo2Date, buf);
     }
 
     // After a save R1 leaves the app; otherwise R2 goes back.
-    namespace Btn = SDK::GUI::Button;
-    mExitKey = !latest && !mModel.isTrackPaused() ? Btn::R1 : Btn::R2;
+    mExitOnR1 = !latest && !mModel.isTrackPaused();
     using B = Widgets::Buttons;
-    mButtons->set(B::NONE, B::NONE, mExitKey == Btn::R1 ? B::AMBER : B::NONE,
-                  mExitKey == Btn::R2 ? B::AMBER : B::NONE);
+    mButtons->set(B::NONE, B::NONE, mExitOnR1 ? B::AMBER : B::NONE, mExitOnR1 ? B::NONE : B::AMBER);
     showFace(FACE_VO2);
 }
 
@@ -214,9 +208,9 @@ void TrackSummaryScreen::setSummary(const ActivitySummary& s)
     fillLapRows();
 }
 
-void TrackSummaryScreen::setVo2(const Vo2Summary& v)
+void TrackSummaryScreen::setVo2(const Vo2Result& v)
 {
-    const bool ok = v.confidence != Vo2Summary::Confidence::NONE;
+    const bool ok = v.valid();
     if (ok) {
         char buf[16];
         Fmt::fixed(buf, sizeof(buf), v.vo2max, 1);
@@ -305,10 +299,19 @@ void TrackSummaryScreen::onKey(uint8_t code)
             }
             break;
 
-        default:
-            if (code == mExitKey) {
+        case Btn::R1:
+            if (mExitOnR1) {
                 leave();
             }
+            break;
+
+        case Btn::R2:
+            if (!mExitOnR1) {
+                leave();
+            }
+            break;
+
+        default:
             break;
     }
 }

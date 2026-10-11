@@ -54,16 +54,6 @@ static float speedFromTotals(float distanceM, float activeTimeS)
     return (activeTimeS > 0.0f) ? (distanceM / activeTimeS) : 0.0f;
 }
 
-// Vo2Summary mirrors the estimator's enums value for value.
-static_assert(static_cast<int>(Vo2MaxEstimator::Confidence::HIGH) == static_cast<int>(Vo2Summary::Confidence::HIGH));
-static_assert(static_cast<int>(Vo2MaxEstimator::Reason::OUT_OF_RANGE) == static_cast<int>(Vo2Summary::Reason::OUT_OF_RANGE));
-
-static Vo2Summary toSummary(const Vo2MaxEstimator::Result& r)
-{
-    return {static_cast<Vo2Summary::Confidence>(r.confidence), static_cast<Vo2Summary::Reason>(r.reason),
-            r.vo2max, r.steadySec, r.hrRangeFrac, r.r2};
-}
-
 } // namespace
 
 Service::Service(SDK::Kernel &kernel)
@@ -765,7 +755,9 @@ void Service::sendInitialInfoToGui()
 
     SDK::send_msg<CustomMessage::SettingsUpd>(mKernel, mSettings, mIsImperial, mTimeFormat12h, hrThresholds, CustomMessage::kHrThresholdsCount, mMaxHrBpm);
     SDK::send_msg<CustomMessage::Summary>(mKernel, &mSummary);
-    SDK::send_msg<CustomMessage::Summary>(mKernel, &mLatestVo2, CustomMessage::LATEST_VO2);
+    if (mLatestVo2.vo2.valid()) {
+        SDK::send_msg<CustomMessage::Summary>(mKernel, &mLatestVo2, CustomMessage::LATEST_VO2);
+    }
     SDK::send_msg<CustomMessage::Battery>(mKernel, static_cast<uint8_t>(mBatterySoc.get()));
 }
 
@@ -808,8 +800,8 @@ void Service::startTrack(std::time_t utc)
     mLapNotEmpty = false;
 
     mSummary = ActivitySummary{};
-    mVo2Estimator.reset();
     mSummary.laps.reserve(10);
+    mVo2Estimator.reset();
 
     // Configure TrackMapBuilder
     mTrackMapBuilder.reset();
@@ -1079,7 +1071,7 @@ void Service::buildPartialSummary()
     mSummary.hrMax     = mHrCounter.getMaximum();
     mSummary.hrAvg     = mHrCounter.getAverage();
     mSummary.map       = mTrackMapBuilder.build(skMapMaxPoints);
-    mSummary.vo2       = toSummary(mVo2Estimator.result(mMaxHrBpm));
+    mSummary.vo2       = mVo2Estimator.result(mMaxHrBpm);
 }
 
 void Service::stopTrack(bool discard)
@@ -1110,7 +1102,7 @@ void Service::stopTrack(bool discard)
         }
         SDK::send_msg<CustomMessage::Summary>(mKernel, &mSummary);
 
-        if (mSummary.vo2.confidence != Vo2Summary::Confidence::NONE) {
+        if (mSummary.vo2.valid()) {
             mLatestVo2 = mSummary;
             if (!mLatestVo2Serializer.save(mLatestVo2)) {
                 LOG_ERROR("Can't save latest VO2 max\n");

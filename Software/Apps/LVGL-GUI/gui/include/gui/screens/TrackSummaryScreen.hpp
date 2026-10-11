@@ -47,7 +47,7 @@ private:
     void buildFaceLaps();
 
     void setSummary(const ActivitySummary& s);
-    void setVo2(const Vo2Summary& v);
+    void setVo2(const Vo2Result& v);
     void showFace(uint8_t face);
     void updateIndicator();
     void fillLapRows();
@@ -88,7 +88,7 @@ private:
     const Source mSource;
     uint8_t mFace       = FACE_VO2;
     bool    mIsImperial = false;
-    uint8_t mExitKey    = 0;
+    bool    mExitOnR1   = false;
     uint8_t mLapPages   = 0;
     uint8_t mLapPage    = 0;
 };

@@ -122,6 +122,16 @@ inline void shortTime(char* buf, size_t n, std::time_t sec)
     }
 }
 
+/// "8 Oct 2026" in local time. Avoids strftime, which pulls in locale code.
+inline void date(char* buf, size_t n, std::time_t utc)
+{
+    static constexpr const char* kMonths[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    std::tm t{};
+    localtime_r(&utc, &t);
+    snprintf(buf, n, "%d %s %d", t.tm_mday, kMonths[t.tm_mon], 1900 + t.tm_year);
+}
+
 /// Whole beats per minute, or "---" below the physiological minimum.
 inline void heartRate(char* buf, size_t n, float bpm)
 {

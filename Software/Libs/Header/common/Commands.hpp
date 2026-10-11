@@ -32,8 +32,8 @@ namespace CustomMessage {
     constexpr SDK::MessageType::Type TRACK_DATA_UPDATE  = 0x00000006;
     constexpr SDK::MessageType::Type LAP_END                  = 0x00000007;
     constexpr SDK::MessageType::Type SUMMARY                  = 0x00000008;
-    constexpr SDK::MessageType::Type LATEST_VO2               = 0x00000013;
     constexpr SDK::MessageType::Type ACCESSORY_STATUS          = 0x00000012;
+    constexpr SDK::MessageType::Type LATEST_VO2               = 0x00000013;
 
     // GUI --> Service
     constexpr SDK::MessageType::Type SETTINGS_SAVE         = 0x0000000A;

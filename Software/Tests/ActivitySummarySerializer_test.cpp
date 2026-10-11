@@ -6,7 +6,7 @@
 namespace
 {
 using SDK::TestSupport::KernelFixture;
-using Vo2 = Vo2Summary;
+using Vo2 = Vo2Result;
 
 constexpr const char* kFile = "summary.json";
 } // namespace
@@ -39,4 +39,14 @@ TEST(ActivitySummarySerializer, MissingVo2LoadsAsNoEstimate)
     ASSERT_TRUE(ActivitySummarySerializer(fixture.kernel, kFile).load(loaded));
     EXPECT_EQ(loaded.vo2.confidence, Vo2::Confidence::NONE);
     EXPECT_FLOAT_EQ(loaded.distance, 200.0f);
+}
+
+TEST(ActivitySummarySerializer, OutOfRangeVo2LoadsAsNoEstimate)
+{
+    KernelFixture fixture;
+    fixture.fileSystem.seedFile(kFile, R"({"vo2":{"confidence":9,"reason":0,"vo2max":50}})");
+
+    ActivitySummary loaded{};
+    ASSERT_TRUE(ActivitySummarySerializer(fixture.kernel, kFile).load(loaded));
+    EXPECT_FALSE(loaded.vo2.valid());
 }
