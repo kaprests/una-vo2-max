@@ -54,15 +54,15 @@ run = ["cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Debug", "cmake --build b
 description = "Build and run the Linux simulator"
 depends = ["sim-build"]
 usage = '''
-flag "--config <file>" help="Companion app config, e.g. simulator-configs/max-hr-190.json"
-flag "--history <file>" help="VO2 history, e.g. simulator-configs/vo2-history.json"
+flag "--config <file>" help="Companion app config (app_config.json), e.g. simulator-configs/max-hr-190.json"
+flag "--fs <dir>" help="Folder copied into the simulator's file system, e.g. simulator-configs/fs/history"
 '''
 run = '''
 set -e
 fs=Software/Output
-mkdir -p "$fs/Activity"
+mkdir -p "$fs"
 if [ -n "${usage_config:-}" ]; then cp "$usage_config" "$fs/app_config.json"; fi
-if [ -n "${usage_history:-}" ]; then cp "$usage_history" "$fs/Activity/vo2_history.json"; fi
+if [ -n "${usage_fs:-}" ]; then cp -r "$usage_fs/." "$fs/"; fi
 cd Software/Apps/LVGL-GUI/simulator/build/bin
 ./{{vars.app}}Simulator
 '''

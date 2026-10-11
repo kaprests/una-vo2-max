@@ -51,7 +51,7 @@ title, comments) for you to review/edit by hand.
 ```sh
 mise run build   # .uapp -> Output/
 mise run sim     # build + run the Linux simulator (keys 1-4 = L1 L2 R1 R2, 5 = wrist, Esc = quit)
-mise run sim --config simulator-configs/max-hr-190.json --history simulator-configs/vo2-history.json
+mise run sim --config simulator-configs/max-hr-190.json --fs simulator-configs/fs/history
 mise run assets  # regenerate LVGL fonts/images
 mise run icons   # regenerate the app icons
 mise run screenshots  # simulator screenshots -> screenshots/
@@ -59,8 +59,8 @@ mise run test    # host unit tests (GoogleTest)
 mise run clean
 ```
 
-`--config` and `--history` copy sample files from `simulator-configs/` into the simulator's
-file system (`Software/Output`); they stay there for later runs.
+`--config` copies a companion app config to `app_config.json`; `--fs` copies a folder's
+contents. Both go into the simulator's file system (`Software/Output`) and stay there.
 
 ## Releasing
 

@@ -6,7 +6,9 @@ set -euo pipefail
 
 app=$(sed -nE 's/^app = "([^"]+)".*/\1/p' mise.toml)
 manifest=Output/app-manifest.json
+tools="$UNA_SDK/Utilities/Scripts/app_packer"
 
+[ -f "$manifest" ] || { echo "Missing $manifest (see https://www.developers.unawatch.com/latest/app-config-json.html)." >&2; exit 1; }
 [ -z "$(git status --porcelain)" ] || { echo "Uncommitted changes; commit or stash first." >&2; exit 1; }
 # The SDK's una-version.sh reads apps-vX.Y.Z tags (see una-app.cmake).
 tag=$(git describe --exact-match --tags --match 'apps-v*' HEAD 2>/dev/null) ||
@@ -21,10 +23,11 @@ cmake -G Ninja -S "Software/Apps/$app-CMake" -B "$build" >/dev/null
 cmake --build "$build"
 [ -f "Output/$uapp" ] || { echo "Build did not produce Output/$uapp." >&2; exit 1; }
 
-tools="$UNA_SDK/Utilities/Scripts/app_packer"
-python "$tools/validate_app_config.py" --check "$manifest" \
-  --check-bounds Software/Libs/Header/service/AppConfigFields.hpp
 python "$tools/min_kernel_version.py" --check "$manifest"
+if grep -q '"configFields"' "$manifest"; then
+  mapfile -t tables < <(grep -rlE 'AppConfig::(int|bool|float|string)Field' Software/Libs)
+  python "$tools/validate_app_config.py" --check "$manifest" "${tables[@]/#/--check-bounds=}"
+fi
 
 python - "$manifest" "$version" "$uapp" <<'EOF'
 import json, sys
