@@ -59,6 +59,8 @@ struct Settings {
     bool     calibTraceEn  = false; ///< Debug: write per-tick outdoor-stride calibrator CSV trace.
     Alerts::Distance::Id alertDistanceId = Alerts::Distance::ID_DEFAULT; ///< Distance alert option.
     Alerts::Time::Id     alertTimeId     = Alerts::Time::ID_OFF;     ///< Time alert option.
+    bool     showGuide     = false; ///< Show the run guide before every run.
+    bool     guideSeen     = false; ///< Guide shown once; it then shows only if showGuide.
 
 };
 

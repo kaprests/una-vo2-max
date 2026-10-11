@@ -39,6 +39,8 @@ enum class ScreenId : uint8_t {
     TrackDiscarded,
     TrackSummary,
     LatestVo2,
+    Guide,
+    GuideBeforeRun,
 };
 
 class ScreenManager
@@ -51,6 +53,9 @@ public:
 
     /// Request a switch; performed on the next frame.
     void goTo(ScreenId id);
+
+    /// Start the track, or ask first when there is no GPS fix.
+    void startRun();
 
 private:
     ScreenManager() = default;

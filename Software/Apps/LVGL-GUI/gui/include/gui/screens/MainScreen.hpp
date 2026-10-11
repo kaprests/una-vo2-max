@@ -1,7 +1,7 @@
 /**
  ******************************************************************************
  * @file    MainScreen.hpp
- * @brief   Pre-activity menu: Start / Settings on the wheel, with
+ * @brief   Pre-activity menu: Start / Latest VO2 / How it works / Settings, with
  *          the sensor-status row and the app title.
  *
  * Port of the Run app's MainView + MainPresenter. Start needs a GPS fix; without
@@ -50,7 +50,7 @@ private:
     std::unique_ptr<Widgets::SensorStatusRow> mSensorRow;
     std::unique_ptr<Widgets::Buttons>         mButtons;
     std::unique_ptr<WheelMenu>                mMenu;
-    lv_obj_t*                                 mMaxHrHint = nullptr;
+    WheelMenu::Item                           mItems[Menu::ID_COUNT] {};
 };
 
 #endif // MAIN_SCREEN_HPP

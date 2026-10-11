@@ -55,12 +55,12 @@ struct Position {
 // -----------------------------------------------------------------------------
 
 struct Root {
-    enum Id { ID_START = 0, ID_LATEST_VO2, ID_SETTINGS,
+    enum Id { ID_START = 0, ID_LATEST_VO2, ID_GUIDE, ID_SETTINGS,
               ID_COUNT, ID_DEFAULT = ID_START };
 
     struct Settings {
         enum Id {
-            ID_ALERTS = 0,
+            ID_ALERTS = 0, ID_SHOW_GUIDE,
             ID_COUNT, ID_DEFAULT = ID_ALERTS
         };
 

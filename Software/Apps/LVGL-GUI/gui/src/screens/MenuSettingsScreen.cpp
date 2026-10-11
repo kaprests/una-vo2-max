@@ -18,7 +18,8 @@ MenuSettingsScreen::MenuSettingsScreen(Model& model)
 
 void MenuSettingsScreen::build()
 {
-    mItems[Menu::ID_ALERTS]      = { Style::Simple, "Lap Alerts" };
+    mItems[Menu::ID_ALERTS]     = { Style::Simple, "Lap Alerts" };
+    mItems[Menu::ID_SHOW_GUIDE] = { Style::Toggle, "Show\nguide", "Show guide", &poppins_semibold_25 };
 
     mMenu      = std::make_unique<WheelMenu>(mRoot, mItems, Menu::ID_COUNT);
     mButtons   = std::make_unique<Widgets::Buttons>(mRoot);
@@ -35,6 +36,7 @@ void MenuSettingsScreen::onShow()
     mModel.resetIdleTimer();
     onGpsFix(mModel.hasGpsFix());
     onAccessoryStatus(mModel.getAccessoryState(), "");
+    onSettings(mModel.getSettings());
 }
 
 void MenuSettingsScreen::onHide()
@@ -49,7 +51,14 @@ void MenuSettingsScreen::onKey(uint8_t code)
         case Btn::L1: mMenu->prev(); break;
         case Btn::L2: mMenu->next(); break;
         case Btn::R1:
-            ScreenManager::instance().goTo(ScreenId::MenuAlerts);
+            if (mMenu->selected() == Menu::ID_ALERTS) {
+                ScreenManager::instance().goTo(ScreenId::MenuAlerts);
+            } else {
+                Settings s = mModel.getSettings();
+                s.showGuide = !s.showGuide;
+                mModel.saveSettings(s);
+                onSettings(s);
+            }
             break;
         case Btn::R2:
             ScreenManager::instance().goTo(ScreenId::Main);
@@ -67,4 +76,10 @@ void MenuSettingsScreen::onGpsFix(bool acquired)
 void MenuSettingsScreen::onAccessoryStatus(uint8_t state, const char* /*name*/)
 {
     mSensorRow->setHr(Widgets::SensorStatusRow::hrState(state));
+}
+
+void MenuSettingsScreen::onSettings(const Settings& settings)
+{
+    mItems[Menu::ID_SHOW_GUIDE].toggleState = settings.showGuide;
+    mMenu->refresh();
 }

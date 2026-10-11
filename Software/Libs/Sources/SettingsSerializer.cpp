@@ -60,6 +60,8 @@ bool SettingsSerializer::save(const Settings &settings)
     writer.add("calib_trace_en", settings.calibTraceEn);
     writer.add("alert_distance_id", static_cast<uint8_t>(settings.alertDistanceId));
     writer.add("alert_time_id",     static_cast<uint8_t>(settings.alertTimeId));
+    writer.add("show_guide",     settings.showGuide);
+    writer.add("guide_seen",     settings.guideSeen);
 
 
     writer.endMap();
@@ -126,6 +128,8 @@ bool SettingsSerializer::load(Settings &settings)
     reader.get("phone_notif_en", settings.phoneNotifEn);
     settings.calibTraceEn = false;  // deterministic default for legacy files
     reader.get("calib_trace_en", settings.calibTraceEn);
+    reader.get("show_guide",     settings.showGuide);
+    reader.get("guide_seen",     settings.guideSeen);
     uint8_t distId = static_cast<uint8_t>(Settings::Alerts::Distance::ID_DEFAULT);
     uint8_t timeId = static_cast<uint8_t>(Settings::Alerts::Time::ID_OFF);
     reader.get("alert_distance_id", distId);

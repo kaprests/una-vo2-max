@@ -11,6 +11,8 @@
 #include "gui/Assets.hpp"
 #include "gui/Strings.hpp"
 
+#include <algorithm>
+
 #define LOG_MODULE_PRX      "MainScreen"
 #define LOG_MODULE_LEVEL    LOG_LEVEL_INFO
 #include "SDK/UnaLogger/Logger.h"
@@ -26,6 +28,8 @@ const WheelMenu::Item kItems[App::MenuNav::Root::ID_COUNT] = {
     { Style::Simple, "Start", nullptr, &poppins_semibold_35 },
     // ID_LATEST_VO2
     { Style::Simple, "Latest VO2\nMax score", nullptr, &poppins_semibold_25 },
+    // ID_GUIDE
+    { Style::Simple, "How it works", nullptr, &poppins_semibold_25 },
     // ID_SETTINGS
     { Style::Simple, "Settings" },
 };
@@ -38,7 +42,8 @@ MainScreen::MainScreen(Model& model)
 
 void MainScreen::build()
 {
-    mMenu      = std::make_unique<WheelMenu>(mRoot, kItems, Menu::ID_COUNT);
+    std::copy(std::begin(kItems), std::end(kItems), mItems);
+    mMenu      = std::make_unique<WheelMenu>(mRoot, mItems, Menu::ID_COUNT);
     // As in MainView::onAnimationMiddle: the lens and R1 hint change half way
     // through the slide, when the incoming item is about to take the centre.
     mMenu->setSlideMidCallback(
@@ -46,8 +51,6 @@ void MainScreen::build()
     mButtons   = std::make_unique<Widgets::Buttons>(mRoot);
     mTitle     = std::make_unique<Widgets::Title>(mRoot, Strings::kAppNameUc);
     mSensorRow = std::make_unique<Widgets::SensorStatusRow>(mRoot, 0, 52, 240, 24);
-    mMaxHrHint = Theme::label(mRoot, Theme::Font::Regular14, Strings::kNoMaxHr, 0, 197, 240,
-                              LV_TEXT_ALIGN_CENTER, Color::YELLOW);
 
     mButtons->set(Widgets::Buttons::NONE, Widgets::Buttons::NONE,
                   Widgets::Buttons::AMBER, Widgets::Buttons::WHITE);
@@ -83,18 +86,21 @@ void MainScreen::onKey(uint8_t code)
 void MainScreen::confirm()
 {
     switch (mMenu->selected()) {
-        case Menu::ID_START:
-            if (mGpsFix) {
-                mModel.trackStart();
-                ScreenManager::instance().goTo(ScreenId::Track);
+        case Menu::ID_START: {
+            const Settings& s = mModel.getSettings();
+            if (s.showGuide || !s.guideSeen) {
+                ScreenManager::instance().goTo(ScreenId::GuideBeforeRun);
             } else {
-                ScreenManager::instance().goTo(ScreenId::TrackStartConfirm);
+                ScreenManager::instance().startRun();
             }
-            break;
+        } break;
         case Menu::ID_LATEST_VO2:
             if (mModel.getLatestVo2()) {
                 ScreenManager::instance().goTo(ScreenId::LatestVo2);
             }
+            break;
+        case Menu::ID_GUIDE:
+            ScreenManager::instance().goTo(ScreenId::Guide);
             break;
         case Menu::ID_SETTINGS:
             ScreenManager::instance().goTo(ScreenId::MenuSettings);
@@ -135,7 +141,13 @@ void MainScreen::onAccessoryStatus(uint8_t state, const char* /*name*/)
 
 void MainScreen::onSettings(const Settings& /*settings*/)
 {
-    Theme::setHidden(mMaxHrHint, mModel.getMaxHrBpm() != 0);
+    const bool noMaxHr = mModel.getMaxHrBpm() == 0;
+    WheelMenu::Item& start = mItems[Menu::ID_START];
+    start.style      = noMaxHr ? Style::Tip : Style::Simple;
+    start.centerFont = noMaxHr ? nullptr : kItems[Menu::ID_START].centerFont;
+    start.tip        = noMaxHr ? Strings::kNoMaxHr : nullptr;
+    start.tipColor   = Color::YELLOW;
+    mMenu->refresh();
 }
 
 void MainScreen::onLatestVo2()

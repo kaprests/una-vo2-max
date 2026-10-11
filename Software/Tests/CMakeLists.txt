@@ -19,8 +19,10 @@ include(${SDK}/Tests/Host/cmake/FetchGoogleTest.cmake)
 add_executable(vo2max-host-tests
     Vo2MaxEstimator_test.cpp
     ActivitySummarySerializer_test.cpp
+    SettingsSerializer_test.cpp
     ${LIBS}/Sources/Vo2MaxEstimator.cpp
     ${LIBS}/Sources/ActivitySummarySerializer.cpp
+    ${LIBS}/Sources/SettingsSerializer.cpp
     ${SDK}/Tests/Host/support/KernelTestDoubles.cpp
     ${SDK}/Libs/Source/UnaLogger/Logger.cpp
     ${SDK}/Libs/Source/JSON/JsonStreamReader.cpp
