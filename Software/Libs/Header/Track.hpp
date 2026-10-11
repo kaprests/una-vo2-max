@@ -3,7 +3,7 @@
  * @file    Track.hpp
  * @date    08-04-2025
  * @author  Denys Saienko <denys.saienko@droid-technologies.com>
- * @brief   Track namespace: state, interval types and real-time metrics.
+ * @brief   Track namespace: state and real-time metrics.
  ******************************************************************************
  *
  ******************************************************************************
@@ -27,47 +27,6 @@ enum class State {
     PAUSED
 };
 
-// =============================================================================
-// Interval training types
-// =============================================================================
-
-/**
- * @brief Current phase of an interval training session.
- */
-enum class IntervalsPhase : uint8_t {
-    WARM_UP   = 0,
-    RUN,
-    REST,
-    COOL_DOWN
-};
-
-/**
- * @brief Timer display mode for the current interval phase.
- *
- * Determined by the workout configuration; the Service sets this field so
- * the GUI never needs to deduce it.
- */
-enum class IntervalsMetric : uint8_t {
-    TIME_OPEN       = 0, ///< Count-up, no fixed target     — label "Open"  (default / WARM_UP / COOL_DOWN)
-    TIME_REMAINING,      ///< Countdown to phase end         — label "Remaining"
-    TIME_ELAPSED,        ///< Count-up from phase start      — label "Elapsed"
-    DISTANCE             ///< Distance remaining to phase end — label "km/mi remaining"
-};
-
-/**
- * @brief Snapshot of interval training state; updated every tick by the Service.
- *
- * All distance values are in metres; the GUI converts to km/mi as needed.
- * phaseTimerSec is remaining / elapsed / open time depending on metric.
- */
-struct IntervalsData {
-    IntervalsPhase  phase         = IntervalsPhase::WARM_UP;
-    IntervalsMetric metric        = IntervalsMetric::TIME_OPEN;
-    uint8_t         repeat        = 0;    ///< 1-based current repeat index
-    uint8_t         totalRepeats  = 0;    ///< Total number of RUN-REST cycles
-    std::time_t     phaseTimerSec = 0;    ///< Seconds (meaning depends on metric)
-    float           distRemaining = 0.0f; ///< Metres remaining (DISTANCE metric only)
-};
 
 // =============================================================================
 
@@ -116,11 +75,6 @@ struct Data {
 
     // Elevation, m (current altitude from barometer)
     float elevation    = 0.0f;
-
-    bool intervalsMode = false; ///< true when the track was started in intervals mode
-
-    // Interval training (populated only when intervalsMode == true)
-    IntervalsData intervals {};
 };
 
 } // namespace Track

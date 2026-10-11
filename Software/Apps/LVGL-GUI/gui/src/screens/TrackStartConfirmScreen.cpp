@@ -35,14 +35,8 @@ void TrackStartConfirmScreen::onKey(uint8_t code)
 {
     namespace Btn = SDK::GUI::Button;
     if (code == Btn::R1) {
-        if (mModel.isPendingIntervalsMode()) {
-            // Intervals were configured and Start chosen without a fix: confirming
-            // goes straight to the countdown, which starts the track itself.
-            ScreenManager::instance().goTo(ScreenId::TrackIntervalsCountdown);
-        } else {
-            mModel.trackStart(false);
-            ScreenManager::instance().goTo(ScreenId::Track);
-        }
+        mModel.trackStart();
+        ScreenManager::instance().goTo(ScreenId::Track);
     } else if (code == Btn::R2) {
         ScreenManager::instance().goTo(ScreenId::Main);
     }

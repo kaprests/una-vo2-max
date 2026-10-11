@@ -125,67 +125,9 @@ Model::HoldConfirmMode Model::getHoldConfirmMode() const
     return mHoldConfirmMode;
 }
 
-void Model::setPendingIntervalsMode(bool mode)
+void Model::trackStart()
 {
-    mPendingIntervalsMode = mode;
-}
-
-bool Model::isPendingIntervalsMode() const
-{
-    return mPendingIntervalsMode;
-}
-
-const Track::IntervalsData& Model::getPendingAlertIntervals() const
-{
-    return mPendingAlertIntervals;
-}
-
-// mTrackData.intervals is pre-populated from settings so that the destination
-// screen has valid data before the first TRACK_DATA_UPDATE arrives from the
-// Service (~1 s after start). Mirrors Service::startTrack().
-void Model::trackStart(bool intervalsMode)
-{
-    mTrackData.intervalsMode = intervalsMode;
-
-    if (intervalsMode) {
-        const Settings::Intervals& cfg = mSettings.intervals;
-        Track::IntervalsData& iv       = mTrackData.intervals;
-
-        iv = Track::IntervalsData{};
-        // totalRepeats is the literal repeat count chosen by the user; 0 == 'Open'.
-        iv.totalRepeats = cfg.repeatsNum;
-
-        if (cfg.warmUp) {
-            iv.phase  = Track::IntervalsPhase::WARM_UP;
-            iv.metric = Track::IntervalsMetric::TIME_OPEN;
-        } else {
-            iv.phase  = Track::IntervalsPhase::RUN;
-            iv.repeat = 1;
-            switch (cfg.runMetric) {
-                case Settings::Intervals::TIME:
-                    iv.metric        = Track::IntervalsMetric::TIME_REMAINING;
-                    iv.phaseTimerSec = static_cast<time_t>(cfg.runTime);
-                    break;
-                case Settings::Intervals::DISTANCE:
-                    iv.metric        = Track::IntervalsMetric::DISTANCE;
-                    iv.distRemaining = cfg.runDistance;
-                    break;
-                default:
-                    iv.metric = Track::IntervalsMetric::TIME_OPEN;
-                    break;
-            }
-            // warmUp=false: the GUI goes straight to the alert screen before any
-            // INTERVALS_PHASE_ALERT arrives, so give it the same data now.
-            mPendingAlertIntervals = iv;
-        }
-    }
-
-    SDK::send_msg<CustomMessage::TrackStart>(mKernel, intervalsMode);
-}
-
-void Model::intervalsNextPhase()
-{
-    SDK::send_msg<CustomMessage::IntervalsNextPhase>(mKernel);
+    SDK::send_msg<CustomMessage::TrackStart>(mKernel);
 }
 
 bool Model::isTrackActive() const
@@ -366,16 +308,6 @@ bool Model::customMessageHandler(SDK::MessageBase* message)
         case CustomMessage::LAP_END: {
             auto* msg = static_cast<CustomMessage::LapEnded*>(message);
             modelListener->onLapChanged(static_cast<uint8_t>(msg->lapNum));
-        } break;
-
-        case CustomMessage::INTERVALS_PHASE_ALERT: {
-            auto* msg              = static_cast<CustomMessage::IntervalsPhaseAlert*>(message);
-            mPendingAlertIntervals = msg->intervals;
-            modelListener->onIntervalsPhaseAlert();
-        } break;
-
-        case CustomMessage::INTERVALS_WORKOUT_COMPLETED: {
-            modelListener->onIntervalsWorkoutCompleted();
         } break;
 
         case CustomMessage::SUMMARY: {

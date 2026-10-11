@@ -19,7 +19,6 @@ MenuSettingsScreen::MenuSettingsScreen(Model& model)
 void MenuSettingsScreen::build()
 {
     mItems[Menu::ID_ALERTS]      = { Style::Simple, "Lap Alerts" };
-    mItems[Menu::ID_PHONE_NOTIF] = { Style::Toggle, "Phone\nNotif.", "Phone Notif.", &poppins_semibold_25 };
 
     mMenu      = std::make_unique<WheelMenu>(mRoot, mItems, Menu::ID_COUNT);
     mButtons   = std::make_unique<Widgets::Buttons>(mRoot);
@@ -34,7 +33,6 @@ void MenuSettingsScreen::onShow()
     mMenu->select(mModel.menu().settings.get());
     mModel.menu().settings.resetChildren();
     mModel.resetIdleTimer();
-    onSettings(mModel.getSettings());
     onGpsFix(mModel.hasGpsFix());
     onAccessoryStatus(mModel.getAccessoryState(), "");
 }
@@ -51,14 +49,7 @@ void MenuSettingsScreen::onKey(uint8_t code)
         case Btn::L1: mMenu->prev(); break;
         case Btn::L2: mMenu->next(); break;
         case Btn::R1:
-            if (mMenu->selected() == Menu::ID_ALERTS) {
-                ScreenManager::instance().goTo(ScreenId::MenuAlerts);
-            } else {
-                Settings sett = mModel.getSettings();
-                sett.phoneNotifEn = !sett.phoneNotifEn;
-                mModel.saveSettings(sett);
-                onSettings(sett);
-            }
+            ScreenManager::instance().goTo(ScreenId::MenuAlerts);
             break;
         case Btn::R2:
             ScreenManager::instance().goTo(ScreenId::Main);
@@ -66,12 +57,6 @@ void MenuSettingsScreen::onKey(uint8_t code)
         default:
             break;
     }
-}
-
-void MenuSettingsScreen::onSettings(const Settings& settings)
-{
-    mItems[Menu::ID_PHONE_NOTIF].toggleState = settings.phoneNotifEn;
-    mMenu->refresh();
 }
 
 void MenuSettingsScreen::onGpsFix(bool acquired)

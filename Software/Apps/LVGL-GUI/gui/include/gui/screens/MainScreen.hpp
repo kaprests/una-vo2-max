@@ -1,12 +1,11 @@
 /**
  ******************************************************************************
  * @file    MainScreen.hpp
- * @brief   Pre-activity menu: Start / Intervals / Settings on the wheel, with
+ * @brief   Pre-activity menu: Start / Settings on the wheel, with
  *          the sensor-status row and the app title.
  *
  * Port of the Run app's MainView + MainPresenter. Start needs a GPS fix; without
- * one it asks for confirmation first. Intervals and Settings are M2 work and
- * currently do nothing.
+ * one it asks for confirmation first.
  ******************************************************************************
  */
 

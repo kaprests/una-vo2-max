@@ -14,18 +14,7 @@
  *     "auto_pause_en":false,  // persisted; no GUI toggle until feature is implemented
  *     "phone_notif_en":true,
  *     "alert_distance_id":0,
- *     "alert_time_id":0,
- *     "intervals":{
- *         "repeats_num":0,
- *         "run_metric":"TIME",
- *         "run_time":0,
- *         "run_distance":0.0,
- *         "rest_metric":"TIME",
- *         "rest_time":0,
- *         "rest_distance":0.0,
- *         "warm_up":true,
- *         "cool_down":true
- *     }
+ *     "alert_time_id":0
  * }
  * @endcode
  *

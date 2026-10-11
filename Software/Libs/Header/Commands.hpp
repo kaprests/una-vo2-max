@@ -32,8 +32,6 @@ namespace CustomMessage {
     constexpr SDK::MessageType::Type TRACK_DATA_UPDATE  = 0x00000006;
     constexpr SDK::MessageType::Type LAP_END                  = 0x00000007;
     constexpr SDK::MessageType::Type SUMMARY                  = 0x00000008;
-    constexpr SDK::MessageType::Type INTERVALS_PHASE_ALERT      = 0x00000009;
-    constexpr SDK::MessageType::Type INTERVALS_WORKOUT_COMPLETED = 0x00000010;
     constexpr SDK::MessageType::Type ACCESSORY_STATUS          = 0x00000012;
 
     // GUI --> Service
@@ -43,7 +41,6 @@ namespace CustomMessage {
     constexpr SDK::MessageType::Type TRACK_PAUSE           = 0x0000000D;
     constexpr SDK::MessageType::Type TRACK_RESUME          = 0x0000000E;
     constexpr SDK::MessageType::Type MANUAL_LAP            = 0x0000000F;
-    constexpr SDK::MessageType::Type INTERVALS_NEXT_PHASE  = 0x00000011;
 
     // Service <-> GUI
     struct SettingsUpd : public SDK::MessageBase {
@@ -175,21 +172,6 @@ namespace CustomMessage {
         }
     };
 
-    struct IntervalsPhaseAlert : public SDK::MessageBase {
-        Track::IntervalsData intervals; ///< Snapshot of the NEW phase — already set before this message is sent
-        IntervalsPhaseAlert() : SDK::MessageBase(INTERVALS_PHASE_ALERT) {}
-
-        explicit IntervalsPhaseAlert(const Track::IntervalsData& intervals)
-            : IntervalsPhaseAlert()
-        {
-            this->intervals = intervals;
-        }
-    };
-
-    struct IntervalsWorkoutCompleted : public SDK::MessageBase {
-        IntervalsWorkoutCompleted() : SDK::MessageBase(INTERVALS_WORKOUT_COMPLETED) {}
-    };
-
     // External-accessory link status forwarded from the kernel's
     // EVENT_ACCESSORY_STATUS, for the pre-activity HR indicator (WP-S4).
     struct AccessoryStatusUpd : public SDK::MessageBase {
@@ -228,18 +210,7 @@ namespace CustomMessage {
     };
 
     struct TrackStart : public SDK::MessageBase {
-        bool intervalsMode = false;
         TrackStart() : SDK::MessageBase(TRACK_START) {}
-
-        explicit TrackStart(bool intervalsMode)
-            : TrackStart()
-        {
-            this->intervalsMode = intervalsMode;
-        }
-    };
-
-    struct IntervalsNextPhase : public SDK::MessageBase {
-        IntervalsNextPhase() : SDK::MessageBase(INTERVALS_NEXT_PHASE) {}
     };
 
     struct TrackStop : public SDK::MessageBase {

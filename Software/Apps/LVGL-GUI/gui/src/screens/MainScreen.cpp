@@ -24,10 +24,6 @@ using Style = WheelMenu::Item::Style;
 const WheelMenu::Item kItems[App::MenuNav::Root::ID_COUNT] = {
     // ID_START
     { Style::Simple, "Start", nullptr, &poppins_semibold_35 },
-    // ID_INTERVALS: icon beside left-aligned text, in both slots
-    { Style::Icon, "Intervals", nullptr, &poppins_semibold_30, nullptr, Color::WHITE, false,
-      &img_intervals_40x43, { 30, 10, 87, 140 },
-      &img_intervals_24x26, { 62, 17, 97, 130 } },
     // ID_SETTINGS
     { Style::Simple, "Settings" },
 };
@@ -84,17 +80,11 @@ void MainScreen::confirm()
     switch (mMenu->selected()) {
         case Menu::ID_START:
             if (mGpsFix) {
-                mModel.trackStart(false);
+                mModel.trackStart();
                 ScreenManager::instance().goTo(ScreenId::Track);
             } else {
-                mModel.setPendingIntervalsMode(false);
                 ScreenManager::instance().goTo(ScreenId::TrackStartConfirm);
             }
-            break;
-        case Menu::ID_INTERVALS:
-            // No GPS-fix check here: the intervals menu is always reachable so
-            // the workout can be configured indoors. The check happens on Start.
-            ScreenManager::instance().goTo(ScreenId::MenuIntervals);
             break;
         case Menu::ID_SETTINGS:
             ScreenManager::instance().goTo(ScreenId::MenuSettings);

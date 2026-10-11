@@ -20,26 +20,6 @@
 #include "SDK/UnaLogger/Logger.h"
 
 
-static const char* metricToStr(Settings::Intervals::Metric metric)
-{
-    switch (metric) {
-    case Settings::Intervals::Metric::OPEN:     return "OPEN";
-    case Settings::Intervals::Metric::TIME:     return "TIME";
-    case Settings::Intervals::Metric::DISTANCE: return "DISTANCE";
-    default:                                    return "OPEN"; // default
-    }
-}
-
-static Settings::Intervals::Metric strToMetric(std::string_view str)
-{
-    if (str == "OPEN")      return Settings::Intervals::Metric::OPEN;
-    if (str == "DISTANCE")  return Settings::Intervals::Metric::DISTANCE;
-    if (str == "TIME")      return Settings::Intervals::Metric::TIME;
-
-    return Settings::Intervals::Metric::OPEN; // default
-}
-
-
 SettingsSerializer::SettingsSerializer(const SDK::Kernel& kernel,
     const char *pathToFile) :
     mKernel(kernel), mPath(pathToFile)
@@ -81,18 +61,6 @@ bool SettingsSerializer::save(const Settings &settings)
     writer.add("alert_distance_id", static_cast<uint8_t>(settings.alertDistanceId));
     writer.add("alert_time_id",     static_cast<uint8_t>(settings.alertTimeId));
 
-    writer.startMap("intervals");
-    writer.add("repeats_num",   settings.intervals.repeatsNum);
-    writer.add("run_metric",    metricToStr(settings.intervals.runMetric));
-    writer.add("run_time",      settings.intervals.runTime);
-    writer.add("run_distance",  settings.intervals.runDistance);
-    writer.add("rest_metric",   metricToStr(settings.intervals.restMetric));
-    writer.add("rest_time",     settings.intervals.restTime);
-    writer.add("rest_distance", settings.intervals.restDistance);
-    writer.add("warm_up",       settings.intervals.warmUp);
-    writer.add("cool_down",     settings.intervals.coolDown);
-    writer.add("last_rest",     settings.intervals.lastRest);
-    writer.endMap();
 
     writer.endMap();
 
@@ -174,23 +142,6 @@ bool SettingsSerializer::load(Settings &settings)
     // prefers) and clearing time, matching the settings-menu invariant.
     if (settings.alertDistanceId != Settings::Alerts::Distance::ID_OFF) {
         settings.alertTimeId = Settings::Alerts::Time::ID_OFF;
-    }
-
-    reader.get("intervals.repeats_num",   settings.intervals.repeatsNum);
-    reader.get("intervals.run_time",      settings.intervals.runTime);
-    reader.get("intervals.run_distance",  settings.intervals.runDistance);
-    reader.get("intervals.rest_time",     settings.intervals.restTime);
-    reader.get("intervals.rest_distance", settings.intervals.restDistance);
-    reader.get("intervals.warm_up",       settings.intervals.warmUp);
-    reader.get("intervals.cool_down",     settings.intervals.coolDown);
-    reader.get("intervals.last_rest",     settings.intervals.lastRest);
-
-    std::string_view metric;
-    if (reader.get("intervals.run_metric", metric)) {
-        settings.intervals.runMetric = strToMetric(metric);
-    }
-    if (reader.get("intervals.rest_metric", metric)) {
-        settings.intervals.restMetric = strToMetric(metric);
     }
 
     delete[] buffer;

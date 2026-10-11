@@ -192,10 +192,6 @@ void Service::run()
                     handleEvent(*static_cast<CustomMessage::ManualLap*>(msg));
                 } break;
 
-                case CustomMessage::INTERVALS_NEXT_PHASE:  {
-                    LOG_DEBUG("INTERVALS_NEXT_PHASE\n");
-                    handleEvent(*static_cast<CustomMessage::IntervalsNextPhase*>(msg));
-                } break;
 
                 // Sensors messages
                 case SDK::MessageType::EVENT_SENSOR_LAYER_DATA: {
@@ -491,8 +487,6 @@ void Service::handleEvent(const CustomMessage::TrackStart& event)
     // We can synchronize the time because we haven't started the track yet,
     // and the GPS could have already updated the current time.
     mTimeTracker.init();
-
-    mIntervalsMode = event.intervalsMode;
 
     startTrack(mTimeTracker.getExpectedUTC());
 }
@@ -795,34 +789,13 @@ void Service::startTrack(std::time_t utc)
     mSummary = ActivitySummary{};
     mSummary.laps.reserve(10);
 
-    // Intervals mode initialization
-    mIntervalsCompleted = false;
-    mTrackData.intervalsMode = mIntervalsMode;
-    if (mIntervalsMode) {
-        const Settings::Intervals& cfg = mSettings.intervals;
-        mTrackData.intervals = Track::IntervalsData{};
-        // totalRepeats is the literal number of RUN-REST cycles the user selected.
-        // repeatsNum == 0 means 'Open' (unlimited): totalRepeats stays 0 and the GUI
-        // shows just the current repeat with no total.
-        mTrackData.intervals.totalRepeats = cfg.repeatsNum;
-
-        if (cfg.warmUp) {
-            startIntervalsPhase(Track::IntervalsPhase::WARM_UP);
-        } else {
-            mTrackData.intervals.repeat = 1;
-            startIntervalsPhase(Track::IntervalsPhase::RUN);
-        }
-    }
-
     // Configure TrackMapBuilder
     mTrackMapBuilder.reset();
     SDK::TrackMapBuilder::GpsPoint startGpsPoint{ mGps.latitude, mGps.longitude };
     mTrackMapBuilder.setDistanceThreshold(startGpsPoint, skMapDistanceThreshold);
 
-    // Determine lap split source. In intervals mode each phase (warm up / run /
-    // rest / cool down) is recorded as its own lap, so the alert-based auto-lap
-    // is disabled to avoid splitting a phase across multiple laps.
-    mLapDivSource = mIntervalsMode ? LapDivSource::OFF : getLapDivSource();
+    // Determine lap split source from the lap alert settings.
+    mLapDivSource = getLapDivSource();
 
     mWristTiltDetector.reset();
 
@@ -834,10 +807,6 @@ void Service::startTrack(std::time_t utc)
     info.devID = DEV_ID;
     info.appID = APP_ID;
     mActivityWriter.start(info);
-
-    if (mIntervalsMode) {
-        emitIntervalsWorkout();
-    }
 
     mTrackState = Track::State::ACTIVE;
 
@@ -911,11 +880,6 @@ void Service::processTrack()
 
     // Altitude, m
     mTrackData.elevation = mAltitudeCounter.getCurrent();
-
-    // Intervals state machine - only while actively running (not paused)
-    if (mIntervalsMode && mTrackState == Track::State::ACTIVE) {
-        processIntervals();
-    }
 
     // Update GUI
     SDK::send_msg<CustomMessage::TrackDataUpd>(mKernel, mTrackData);
@@ -1023,7 +987,7 @@ void Service::saveLap(float autoLapDistanceM)
     // save is UI time, not activity time. End at the pause instant and trim the
     // same tail from the elapsed span. A mid-activity lap is not paused, so both
     // calls are no-ops there -- though only the GUI guarantees that: the
-    // ManualLap handler and the intervals phase advance do not check the state.
+    // ManualLap handler does not check the state.
     const std::time_t endUtc  = mTimeCounter.getEndValue();
     const std::time_t tailSec = mTimeCounter.getTrailingPause();
 
@@ -1043,10 +1007,6 @@ void Service::saveLap(float autoLapDistanceM)
     fitLap.ascent    = mAltitudeCounter.getLapAscent();
     fitLap.descent   = mAltitudeCounter.getLapDescent();
 
-    // Link this lap to its workout_step (intervals only; left INVALID otherwise).
-    if (mIntervalsMode && mIntervalsStepMap.valid) {
-        fitLap.wktStepIndex = intervalsWktStepIndex();
-    }
 
     mActivityWriter.addLap(fitLap);
     mTrackData.lapNum++;
@@ -1241,372 +1201,4 @@ void Service::onWristTilt(uint32_t timestampMs)
 {
     LOG_DEBUG("Wrist Tilt detected\n");
     backlightOn();
-}
-
-
-// =============================================================================
-// Interval training state machine
-// =============================================================================
-
-void Service::handleEvent(const CustomMessage::IntervalsNextPhase& event)
-{
-    if (mIntervalsMode && mTrackState == Track::State::ACTIVE) {
-        advanceIntervalsPhase(true);
-    }
-}
-
-void Service::emitIntervalsWorkout()
-{
-    const Settings::Intervals& cfg = mSettings.intervals;
-
-    auto runDuration = [&](ActivityWriter::WorkoutStepData& s) {
-        if (cfg.runMetric == Settings::Intervals::TIME && cfg.runTime > 0) {
-            s.durationType = SDK::Fit::WktStepDuration::Time;
-            s.durationValue = static_cast<uint32_t>(cfg.runTime) * 1000u;        // ms
-        } else if (cfg.runMetric == Settings::Intervals::DISTANCE && cfg.runDistance > 0.0f) {
-            s.durationType = SDK::Fit::WktStepDuration::Distance;
-            s.durationValue = static_cast<uint32_t>(cfg.runDistance * 100.0f);   // cm
-        } else {
-            s.durationType = SDK::Fit::WktStepDuration::Open;
-            s.durationValue = 0;
-        }
-    };
-    auto restDuration = [&](ActivityWriter::WorkoutStepData& s) {
-        if (cfg.restMetric == Settings::Intervals::TIME && cfg.restTime > 0) {
-            s.durationType = SDK::Fit::WktStepDuration::Time;
-            s.durationValue = static_cast<uint32_t>(cfg.restTime) * 1000u;        // ms
-        } else if (cfg.restMetric == Settings::Intervals::DISTANCE && cfg.restDistance > 0.0f) {
-            s.durationType = SDK::Fit::WktStepDuration::Distance;
-            s.durationValue = static_cast<uint32_t>(cfg.restDistance * 100.0f);   // cm
-        } else {
-            s.durationType = SDK::Fit::WktStepDuration::Open;
-            s.durationValue = 0;
-        }
-    };
-
-    ActivityWriter::WorkoutStepData steps[8];
-    uint8_t n = 0;
-    IntervalsStepMap map{};
-
-    // Warm up
-    if (cfg.warmUp) {
-        steps[n].intensity = SDK::Fit::Intensity::Warmup;
-        steps[n].durationType = SDK::Fit::WktStepDuration::Open;
-        map.warmUpIdx = n;
-        n++;
-    }
-
-    // Run (first / repeated run)
-    map.runIdx = n;
-    steps[n].intensity = SDK::Fit::Intensity::Active;
-    runDuration(steps[n]);
-    n++;
-
-    if (cfg.repeatsNum == 0) {
-        // 'Open' (unlimited): describe a single run + rest pair, no terminating repeat.
-        map.restIdx = n;
-        steps[n].intensity = SDK::Fit::Intensity::Rest;
-        restDuration(steps[n]);
-        n++;
-        map.finalRunIdx = map.runIdx;
-    } else if (cfg.lastRest) {
-        // Every rep has a rest: repeat the run+rest pair repeatsNum times.
-        map.restIdx = n;
-        steps[n].intensity = SDK::Fit::Intensity::Rest;
-        restDuration(steps[n]);
-        n++;
-        if (cfg.repeatsNum >= 2) {
-            steps[n].durationType = SDK::Fit::WktStepDuration::RepeatUntilStepsComplete;
-            steps[n].durationValue = map.runIdx;            // loop back to the run step
-            steps[n].repeatCount = cfg.repeatsNum;          // total iterations
-            n++;
-        }
-        map.finalRunIdx = map.runIdx;
-    } else {
-        // Skip the final rest: repeat run+rest (repeatsNum - 1) times, then a final run.
-        if (cfg.repeatsNum >= 2) {
-            map.restIdx = n;
-            steps[n].intensity = SDK::Fit::Intensity::Rest;
-            restDuration(steps[n]);
-            n++;
-            steps[n].durationType = SDK::Fit::WktStepDuration::RepeatUntilStepsComplete;
-            steps[n].durationValue = map.runIdx;
-            steps[n].repeatCount = static_cast<uint32_t>(cfg.repeatsNum - 1);
-            n++;
-            map.finalRunIdx = n;
-            steps[n].intensity = SDK::Fit::Intensity::Active;
-            runDuration(steps[n]);
-            n++;
-        } else {
-            // repeatsNum == 1 with the rest skipped: a single run, no rest.
-            map.finalRunIdx = map.runIdx;
-        }
-    }
-
-    // Cool down
-    if (cfg.coolDown) {
-        steps[n].intensity = SDK::Fit::Intensity::Cooldown;
-        steps[n].durationType = SDK::Fit::WktStepDuration::Open;
-        map.coolDownIdx = n;
-        n++;
-    }
-
-    map.valid = true;
-    mIntervalsStepMap = map;
-
-    mActivityWriter.addWorkout("Intervals", steps, n);
-}
-
-uint16_t Service::intervalsWktStepIndex() const
-{
-    if (!mIntervalsStepMap.valid) {
-        return 0xFFFF;
-    }
-
-    const Track::IntervalsData& iv = mTrackData.intervals;
-    const Settings::Intervals& cfg = mSettings.intervals;
-
-    switch (iv.phase) {
-    case Track::IntervalsPhase::WARM_UP:   return mIntervalsStepMap.warmUpIdx;
-    case Track::IntervalsPhase::COOL_DOWN: return mIntervalsStepMap.coolDownIdx;
-    case Track::IntervalsPhase::REST:      return mIntervalsStepMap.restIdx;
-    case Track::IntervalsPhase::RUN:
-        // The final run uses a standalone step only when the last rest is skipped.
-        if (!cfg.lastRest && cfg.repeatsNum >= 2 && iv.repeat >= cfg.repeatsNum) {
-            return mIntervalsStepMap.finalRunIdx;
-        }
-        return mIntervalsStepMap.runIdx;
-    }
-    return 0xFFFF;
-}
-
-void Service::startIntervalsPhase(Track::IntervalsPhase phase)
-{
-    mPhaseStartActiveSec  = mTimeCounter.getValueActive();
-    mPhaseStartActiveDist = mDistanceCounter.getValueActive();
-
-    Track::IntervalsData& iv   = mTrackData.intervals;
-    const Settings::Intervals& cfg = mSettings.intervals;
-
-    LOG_DEBUG("Intervals cfg: repeats=%u warmUp=%u coolDown=%u "
-             "runMetric=%u runTime=%u runDist=%.1f "
-             "restMetric=%u restTime=%u restDist=%.1f\n",
-             cfg.repeatsNum, cfg.warmUp, cfg.coolDown,
-             cfg.runMetric, cfg.runTime, cfg.runDistance,
-             cfg.restMetric, cfg.restTime, cfg.restDistance);
-
-    iv.phase = phase;
-
-    switch (phase) {
-    case Track::IntervalsPhase::WARM_UP:
-    case Track::IntervalsPhase::COOL_DOWN:
-        iv.metric        = Track::IntervalsMetric::TIME_OPEN;
-        iv.phaseTimerSec = 0;
-        iv.distRemaining = 0.0f;
-        break;
-
-    case Track::IntervalsPhase::RUN:
-        if (cfg.runMetric == Settings::Intervals::TIME && cfg.runTime > 0) {
-            iv.metric        = Track::IntervalsMetric::TIME_REMAINING;
-            iv.phaseTimerSec = static_cast<time_t>(cfg.runTime);
-            iv.distRemaining = 0.0f;
-        } else if (cfg.runMetric == Settings::Intervals::DISTANCE && cfg.runDistance > 0.0f) {
-            iv.metric        = Track::IntervalsMetric::DISTANCE;
-            iv.phaseTimerSec = 0;
-            iv.distRemaining = cfg.runDistance;
-        } else {
-            iv.metric        = Track::IntervalsMetric::TIME_OPEN;
-            iv.phaseTimerSec = 0;
-            iv.distRemaining = 0.0f;
-        }
-        break;
-
-    case Track::IntervalsPhase::REST:
-        if (cfg.restMetric == Settings::Intervals::TIME && cfg.restTime > 0) {
-            iv.metric        = Track::IntervalsMetric::TIME_REMAINING;
-            iv.phaseTimerSec = static_cast<time_t>(cfg.restTime);
-            iv.distRemaining = 0.0f;
-        } else if (cfg.restMetric == Settings::Intervals::DISTANCE && cfg.restDistance > 0.0f) {
-            iv.metric        = Track::IntervalsMetric::DISTANCE;
-            iv.phaseTimerSec = 0;
-            iv.distRemaining = cfg.restDistance;
-        } else {
-            iv.metric        = Track::IntervalsMetric::TIME_OPEN;
-            iv.phaseTimerSec = 0;
-            iv.distRemaining = 0.0f;
-        }
-        break;
-    }
-
-    LOG_DEBUG("Intervals: phase=%u metric=%u repeat=%u/%u\n",
-              static_cast<uint8_t>(iv.phase),
-              static_cast<uint8_t>(iv.metric),
-              iv.repeat, iv.totalRepeats);
-}
-
-void Service::processIntervals()
-{
-    if (mIntervalsCompleted) {
-        return;
-    }
-
-    Track::IntervalsData& iv   = mTrackData.intervals;
-    const Settings::Intervals& cfg = mSettings.intervals;
-
-    const time_t elapsed = mTimeCounter.getValueActive() - mPhaseStartActiveSec;
-    bool autoAdvance = false;
-
-    switch (iv.metric) {
-    case Track::IntervalsMetric::TIME_OPEN:
-        iv.phaseTimerSec = elapsed;
-        break;
-
-    case Track::IntervalsMetric::TIME_ELAPSED:
-        iv.phaseTimerSec = elapsed;
-        break;
-
-    case Track::IntervalsMetric::TIME_REMAINING: {
-        const time_t target = (iv.phase == Track::IntervalsPhase::RUN)
-            ? static_cast<time_t>(cfg.runTime)
-            : static_cast<time_t>(cfg.restTime);
-        iv.phaseTimerSec = (elapsed < target) ? (target - elapsed) : 0;
-        autoAdvance = (elapsed >= target);
-        break;
-    }
-
-    case Track::IntervalsMetric::DISTANCE: {
-        const float target = (iv.phase == Track::IntervalsPhase::RUN)
-            ? cfg.runDistance
-            : cfg.restDistance;
-        const float done = mDistanceCounter.getValueActive() - mPhaseStartActiveDist;
-        iv.distRemaining = (done < target) ? (target - done) : 0.0f;
-        autoAdvance = (done >= target);
-        break;
-    }
-    }
-
-    if (autoAdvance) {
-        advanceIntervalsPhase();
-    }
-}
-
-void Service::advanceIntervalsPhase(bool manual)
-{
-    Track::IntervalsData& iv       = mTrackData.intervals;
-    const Settings::Intervals& cfg = mSettings.intervals;
-
-    const Track::IntervalsPhase prevPhase = iv.phase;
-    Track::IntervalsPhase nextPhase       = iv.phase;
-    bool completed = false;
-
-    switch (iv.phase) {
-    case Track::IntervalsPhase::WARM_UP:
-        nextPhase = Track::IntervalsPhase::RUN;
-        iv.repeat = 1;
-        break;
-
-    case Track::IntervalsPhase::RUN:
-        if (!cfg.lastRest && cfg.repeatsNum != 0 && iv.repeat >= cfg.repeatsNum) {
-            // User chose to skip the rest after the final interval: go straight
-            // to cool down (or finish if cool down is disabled). Not applicable
-            // to 'Open' repeats (repeatsNum == 0), which have no final interval.
-            if (cfg.coolDown) {
-                nextPhase = Track::IntervalsPhase::COOL_DOWN;
-            } else {
-                completed = true;
-            }
-        } else {
-            // Go to REST; REST decides whether to cycle again or finish.
-            nextPhase = Track::IntervalsPhase::REST;
-        }
-        break;
-
-    case Track::IntervalsPhase::REST:
-        // Semantics: repeatsNum = number of RUN-REST cycles the user selected.
-        //   repeatsNum=N (N>=1)  ->  exactly N cycles
-        //   repeatsNum=0         ->  'Open': cycle indefinitely until the user ends
-        //                            the workout manually (never auto-completes here)
-        if (cfg.repeatsNum == 0 || iv.repeat < cfg.repeatsNum) {
-            iv.repeat++;
-            nextPhase = Track::IntervalsPhase::RUN;
-        } else {
-            if (cfg.coolDown) {
-                nextPhase = Track::IntervalsPhase::COOL_DOWN;
-            } else {
-                completed = true;
-            }
-        }
-        break;
-
-    case Track::IntervalsPhase::COOL_DOWN:
-        completed = true;
-        break;
-    }
-
-    if (completed) {
-        LOG_INFO("Intervals: workout completed\n");
-
-        // The programmed workout is done, but the session keeps running so the
-        // user can record additional manual laps and end it themselves. Close the
-        // final phase as a lap, then drop out of intervals mode so the track
-        // screen reverts to normal faces and R2 records a lap (not a phase advance).
-        if (mLapNotEmpty) {
-            saveLap();
-        }
-        mIntervalsCompleted = true;
-        mIntervalsMode = false;
-        mTrackData.intervalsMode = false;
-
-        // alert=true: user needs notification when workout ends automatically (REST->END).
-        // COOL_DOWN->END is always manual, so alert&&!manual stays false -> no vibro.
-        onIntervalsPhaseChange(true, manual);
-        SDK::send_msg<CustomMessage::IntervalsWorkoutCompleted>(mKernel);
-        return;
-    }
-
-    // Record the phase that just finished as its own lap before the next one
-    // begins. The final phase is captured by stopTrack() when the workout ends.
-    if (mLapNotEmpty) {
-        saveLap();
-    }
-
-    startIntervalsPhase(nextPhase);
-
-    const bool isActivePhase = (nextPhase == Track::IntervalsPhase::RUN ||
-                                nextPhase == Track::IntervalsPhase::REST);
-
-    // WARM_UP -> RUN always shows an alert (marks workout start, user needs to see the phase),
-    // even though the transition is manual.
-    // All other transitions show an alert only on auto-advance.
-    const bool isWarmupToRun  = (prevPhase == Track::IntervalsPhase::WARM_UP &&
-                                 nextPhase == Track::IntervalsPhase::RUN);
-
-    const bool showAlertScreen = isWarmupToRun || 
-                                    isActivePhase ||
-                                    (!manual && nextPhase == Track::IntervalsPhase::COOL_DOWN);
-
-    if (showAlertScreen) {
-        SDK::send_msg<CustomMessage::IntervalsPhaseAlert>(mKernel, mTrackData.intervals);
-    }
-
-    onIntervalsPhaseChange(showAlertScreen, manual);
-}
-
-void Service::onIntervalsPhaseChange(bool alert, bool manual)
-{
-    LOG_DEBUG("Intervals: phase change (phase=%u, alert=%u, manual=%u)\n",
-             static_cast<uint8_t>(mTrackData.intervals.phase),
-             static_cast<uint8_t>(alert),
-             static_cast<uint8_t>(manual));
-
-    if (alert) {
-        backlightOn(skBacklightTimeout * 2); // covers both the alert screen and the next one
-    }
-
-    // fire vibro/buzzer - alert screen shown on auto-advance,
-    // user needs active notification to attract attention.
-    if (alert && !manual) {
-        playVibroPattern(SDK::Message::RequestVibroPlay::Effect::SHORT_DOUBLE_CLICK_STRONG_1_100);
-        playBuzzerPattern(150, 2);
-    }
 }

@@ -28,21 +28,6 @@ constexpr int32_t kTimeY       = 63;
 constexpr int32_t kMeridiemY   = 105;
 constexpr int32_t kMeridiemGap = 5;
 
-// Interval phase accents (TrackFaceIntervals).
-constexpr uint32_t kIvNeutral = Color::WHITE;
-constexpr uint32_t kIvRun     = Color::CYAN;
-constexpr uint32_t kIvRest    = Color::YELLOW_DARK;
-
-const char* phaseTitle(Track::IntervalsPhase phase)
-{
-    switch (phase) {
-        case Track::IntervalsPhase::RUN:       return "RUN";
-        case Track::IntervalsPhase::REST:      return "REST";
-        case Track::IntervalsPhase::COOL_DOWN: return "COOL DOWN";
-        default:                               return "WARM UP";
-    }
-}
-
 void setHidden(lv_obj_t* obj, bool hidden)
 {
     if (hidden) {
@@ -68,20 +53,6 @@ void TrackScreen::build()
     buildFaceStatus();
     buildFaceLap();
     buildFaceTotal();
-    buildFaceIntervals();
-}
-
-void TrackScreen::buildFaceIntervals()
-{
-    lv_obj_t* f = mFaceIntervals = Theme::container(mRoot, 0, 0, 240, 240);
-    mIvRepeats     = Theme::label(f, F::Italic18, "", 80, 202, 80);
-    mIvRunIcon     = Theme::image(f, &img_runningman_46x46, 97, 167);
-    mIvHr          = Theme::label(f, F::SemiBold35, Strings::kNoValue, 40, 162, 160);
-    mIvPace        = Theme::label(f, F::SemiBold35, Strings::kNoValue, 40, 162, 160);
-    mIvHeartIcon   = Theme::image(f, &img_heart_30x30, 105, 137);
-    mIvPaceIcon    = Theme::image(f, &img_pace_30x30, 105, 137);
-    mIntervalsTimer = std::make_unique<Widgets::IntervalsTimer>(f, 25, 41);
-    mIntervalsTitle = std::make_unique<Widgets::Title>(f, "WARM UP");
 }
 
 void TrackScreen::buildFaceTotal()
@@ -131,30 +102,14 @@ void TrackScreen::buildFaceStatus()
     mPercent = Theme::label(f, F::Medium25, "0%", 42, 187, 157);
 }
 
-uint16_t TrackScreen::firstFace() const
-{
-    return mIntervalsMode ? FaceId::ID_INTERVALS : FaceId::ID_TRACK1;
-}
-
 void TrackScreen::onShow()
 {
     mModel.menu().track.action.reset();
 
-    // The intervals face exists only in an intervals workout; the stored face
-    // position (default ID_INTERVALS) is clamped into the valid range.
     const Track::Data& data = mModel.getTrackData();
-    mIntervalsMode = data.intervalsMode;
-    mIndicator->setCount(mIntervalsMode ? kFaceCount : kFaceCount - 1);
-
-    // Coming back from a cool-down alert, show the intervals face regardless of
-    // where the user had scrolled, so the cool-down phase is visible.
-    const bool forceIntervals = mIntervalsMode &&
-        mModel.getPendingAlertIntervals().phase == Track::IntervalsPhase::COOL_DOWN;
-    uint16_t face = forceIntervals ? static_cast<uint16_t>(FaceId::ID_INTERVALS) : mModel.menu().track.get();
-    if (face < firstFace() || face >= kFaceCount) {
-        face = firstFace();
-    }
-    showFace(face);
+    mIndicator->setCount(kFaceCount);
+    const uint16_t face = mModel.menu().track.get();
+    showFace(face < kFaceCount ? face : static_cast<uint16_t>(FaceId::ID_DEFAULT));
 
     mIsImperial       = mModel.isUnitsImperial();
     mIs12Hour         = mModel.is12HourFormat();
@@ -180,37 +135,28 @@ void TrackScreen::onHide()
 void TrackScreen::showFace(uint16_t id)
 {
     mFaceId = id;
-    setHidden(mFaceIntervals, id != FaceId::ID_INTERVALS);
     setHidden(mFaceTotal,     id != FaceId::ID_TRACK1);
     setHidden(mFaceLap,       id != FaceId::ID_TRACK2);
     setHidden(mFaceStatus,    id != FaceId::ID_TRACK3);
-    // In a free run the indicator has no slot for the hidden intervals face.
-    mIndicator->setActive(static_cast<uint16_t>(mIntervalsMode ? id : id - 1));
+    mIndicator->setActive(id);
 }
 
 void TrackScreen::onKey(uint8_t code)
 {
     namespace Btn = SDK::GUI::Button;
-    const uint16_t minId = firstFace();
     switch (code) {
         case Btn::L1:
-            showFace(mFaceId <= minId ? static_cast<uint16_t>(kFaceCount - 1) : static_cast<uint16_t>(mFaceId - 1));
+            showFace(mFaceId == 0 ? static_cast<uint16_t>(kFaceCount - 1) : static_cast<uint16_t>(mFaceId - 1));
             break;
         case Btn::L2:
-            showFace(mFaceId + 1 >= kFaceCount ? minId : static_cast<uint16_t>(mFaceId + 1));
+            showFace(mFaceId + 1 >= kFaceCount ? uint16_t{0} : static_cast<uint16_t>(mFaceId + 1));
             break;
         case Btn::R1:
             ScreenManager::instance().goTo(ScreenId::TrackAction);
             break;
         case Btn::R2:
-            // In an intervals workout the lap button advances the phase, on any
-            // face; laps are phase-driven. A free run records a manual lap.
-            if (mIntervalsMode) {
-                mModel.intervalsNextPhase();
-            } else {
-                mModel.saveLap();
-                ScreenManager::instance().goTo(ScreenId::TrackLap);
-            }
+            mModel.saveLap();
+            ScreenManager::instance().goTo(ScreenId::TrackLap);
             break;
         default:
             break;
@@ -241,49 +187,8 @@ void TrackScreen::onTrackData(const Track::Data& data)
     lv_label_set_text(mHrValue, buf);
     mHrZone->setHR(data.hr < App::Display::kMinHR ? 0.0f : data.hr, mHrThresholds, mHrThresholdCount);
 
-    // Intervals face
-    if (mIntervalsMode) {
-        const Track::IntervalsData& iv = data.intervals;
-        setIntervalsPhase(iv);
-        if (iv.metric == Track::IntervalsMetric::DISTANCE) {
-            mIntervalsTimer->setPhaseDistance(Fmt::distUnits(iv.distRemaining, mIsImperial), mIsImperial);
-        } else {
-            mIntervalsTimer->setPhaseTime(iv.phaseTimerSec, iv.metric);
-        }
-        Fmt::pace(buf, sizeof(buf), Fmt::paceUnits(data.pace, mIsImperial));
-        lv_label_set_text(mIvPace, buf);
-        Fmt::heartRate(buf, sizeof(buf), data.hr);
-        lv_label_set_text(mIvHr, buf);
-    }
-
     mHrSource = data.hrSource;
     updateHrIcon();
-}
-
-void TrackScreen::setIntervalsPhase(const Track::IntervalsData& iv)
-{
-    const bool run  = iv.phase == Track::IntervalsPhase::RUN;
-    const bool rest = iv.phase == Track::IntervalsPhase::REST;
-
-    mIntervalsTitle->setText(phaseTitle(iv.phase));
-    mIntervalsTimer->setColor(run ? kIvRun : rest ? kIvRest : kIvNeutral);
-    mIntervalsTimer->setLineVisible(run || rest);
-
-    // Bottom row: pace while running, heart rate while resting, the runner otherwise.
-    setHidden(mIvRunIcon,   run || rest);
-    setHidden(mIvPaceIcon,  !run);
-    setHidden(mIvPace,      !run);
-    setHidden(mIvHeartIcon, !rest);
-    setHidden(mIvHr,        !rest);
-
-    // Repeat counter only during RUN / REST; "n" alone for open-ended repeats.
-    setHidden(mIvRepeats, !(run || rest));
-    if (iv.totalRepeats == 0) {
-        lv_label_set_text_fmt(mIvRepeats, "%u", static_cast<unsigned>(iv.repeat));
-    } else {
-        lv_label_set_text_fmt(mIvRepeats, "%u/%u", static_cast<unsigned>(iv.repeat),
-                              static_cast<unsigned>(iv.totalRepeats));
-    }
 }
 
 void TrackScreen::onBatteryLevel(uint8_t level)
@@ -326,16 +231,6 @@ void TrackScreen::setTime(uint8_t h, uint8_t m)
 void TrackScreen::onLapChanged(uint8_t /*lapEnd*/)
 {
     ScreenManager::instance().goTo(ScreenId::TrackLap);
-}
-
-void TrackScreen::onIntervalsPhaseAlert()
-{
-    ScreenManager::instance().goTo(ScreenId::TrackIntervalsAlert);
-}
-
-void TrackScreen::onIntervalsWorkoutCompleted()
-{
-    ScreenManager::instance().goTo(ScreenId::TrackIntervalsCompleted);
 }
 
 void TrackScreen::onGpsFix(bool acquired)

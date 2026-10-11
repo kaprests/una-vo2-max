@@ -142,36 +142,6 @@ private:
 };
 
 // -----------------------------------------------------------------------------
-/// Interval phase readout, 190 x 91: big MM:SS or distance, a description line
-/// and a divider, all in the phase's accent colour.
-class IntervalsTimer
-{
-public:
-    IntervalsTimer(lv_obj_t* parent, int32_t x, int32_t y);
-
-    /// MM:SS (clamped to 99:59) with "Open" / "Remaining" / "Elapsed" beneath.
-    void setPhaseTime(std::time_t sec, Track::IntervalsMetric metric);
-    /// Distance left with "km remaining" / "mi remaining" beneath.
-    void setPhaseDistance(float distInUnits, bool imperial);
-    /// MM:SS only (alert screens).
-    void setRemainingTime(std::time_t sec);
-    /// "Open" as the main readout (alert screens).
-    void setOpen();
-
-    void setColor(uint32_t color);
-    void setLineVisible(bool visible);
-    void setDescriptionVisible(bool visible);
-
-private:
-    void setTimerClamped(std::time_t sec);
-    void setDescription(const char* text);   ///< nullptr hides it
-
-    lv_obj_t* mTimer       = nullptr;
-    lv_obj_t* mDescription = nullptr;
-    lv_obj_t* mLine        = nullptr;
-};
-
-// -----------------------------------------------------------------------------
 /// Two-stage "two-tone" value picker (whole.fraction or minutes:seconds): the
 /// component being edited is teal SemiBold 60, the other grey Light 60, with the
 /// next two values of the active component listed beneath it.

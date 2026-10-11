@@ -102,11 +102,7 @@ public:
     HoldConfirmMode getHoldConfirmMode() const;
 
     // Track
-    void setPendingIntervalsMode(bool mode);
-    bool isPendingIntervalsMode() const;
-    const Track::IntervalsData& getPendingAlertIntervals() const;
-    void trackStart(bool intervalsMode);
-    void intervalsNextPhase();
+    void trackStart();
     bool isTrackActive() const;
     void trackPause();
     void trackResume();
@@ -157,8 +153,6 @@ private:
 
     // Track
     HoldConfirmMode        mHoldConfirmMode       = HoldConfirmMode::Discard;
-    bool                   mPendingIntervalsMode  = false;
-    Track::IntervalsData   mPendingAlertIntervals {};  ///< Snapshot from last INTERVALS_PHASE_ALERT
     Track::State           mTrackState            {};
     const ActivitySummary* mActivitySummary = nullptr;
     Track::Data            mTrackData             {};
