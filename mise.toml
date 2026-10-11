@@ -72,6 +72,10 @@ description = "Regenerate LVGL fonts and images"
 dir = "Software/Apps/LVGL-GUI/assets"
 run = "python gen_assets.py"
 
+[tasks.icons]
+description = "Regenerate the app icons in Resources/"
+run = "python tools/make_icons.py"
+
 [tasks.test]
 description = "Build and run the host unit tests (Docs/unit-testing.md)"
 dir = "Software/Tests"

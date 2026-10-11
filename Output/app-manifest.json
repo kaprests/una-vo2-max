@@ -12,7 +12,7 @@
     "GPS",
     "HR"
   ],
-  "description": "Estimates VO2 max from heart rate and pace during a steady outdoor run.",
+  "description": "Estimate VO2 max score from heart rate and pace during a steady outdoor run. Early version: developed fully in simulator, so threshold values are not yet tuned on real watch data. Treat results as indicative.",
   "id": "DDBF14BBA60D533F",
   "supportsLaps": true,
   "supportsDistance": true,
