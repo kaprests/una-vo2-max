@@ -1,7 +1,7 @@
 /**
  ******************************************************************************
  * @file    MainScreen.hpp
- * @brief   Pre-activity menu: Start / Latest VO2 / How it works / Settings, with
+ * @brief   Pre-activity menu: Start / VO2 history / How it works / Settings, with
  *          the sensor-status row and the app title.
  *
  * Port of the Run app's MainView + MainPresenter. Start needs a GPS fix; without
@@ -31,7 +31,7 @@ public:
     // ModelListener
     void onIdleTimeout() override;
     void onSettings(const Settings& settings) override;
-    void onLatestVo2() override;
+    void onVo2History() override;
     void onGpsFix(bool acquired) override;
     void onAccessoryStatus(uint8_t state, const char* name) override;
 
@@ -43,6 +43,7 @@ private:
 
     void confirm();
     void updateBackground();
+    bool hasHistory() const;
 
     bool mGpsFix = false;
 

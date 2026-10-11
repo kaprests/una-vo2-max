@@ -12,6 +12,7 @@
 #include "Settings.hpp"
 #include "Track.hpp"
 #include "ActivitySummary.hpp"
+#include "Vo2History.hpp"
 
 // Force 4-byte alignment for all message structures
 #pragma pack(push, 4)
@@ -33,7 +34,7 @@ namespace CustomMessage {
     constexpr SDK::MessageType::Type LAP_END                  = 0x00000007;
     constexpr SDK::MessageType::Type SUMMARY                  = 0x00000008;
     constexpr SDK::MessageType::Type ACCESSORY_STATUS          = 0x00000012;
-    constexpr SDK::MessageType::Type LATEST_VO2               = 0x00000013;
+    constexpr SDK::MessageType::Type VO2_HISTORY              = 0x00000013;
 
     // GUI --> Service
     constexpr SDK::MessageType::Type SETTINGS_SAVE         = 0x0000000A;
@@ -163,14 +164,23 @@ namespace CustomMessage {
         }
     };
 
-    /// Non-owning pointer to a Service-owned summary. Type is SUMMARY (last
-    /// run) or LATEST_VO2 (last run with a VO2 max estimate).
+    /// Non-owning pointer to the Service-owned summary of the last run.
     struct Summary : public SDK::MessageBase {
         const ActivitySummary* summary = nullptr;
 
-        explicit Summary(const ActivitySummary* summary = nullptr, SDK::MessageType::Type type = SUMMARY)
-            : SDK::MessageBase(type)
+        explicit Summary(const ActivitySummary* summary = nullptr)
+            : SDK::MessageBase(SUMMARY)
             , summary(summary)
+        {}
+    };
+
+    /// Non-owning pointer to the Service-owned VO2 max history.
+    struct Vo2HistoryUpd : public SDK::MessageBase {
+        const Vo2History* history = nullptr;
+
+        explicit Vo2HistoryUpd(const Vo2History* history = nullptr)
+            : SDK::MessageBase(VO2_HISTORY)
+            , history(history)
         {}
     };
 

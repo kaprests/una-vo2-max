@@ -26,8 +26,8 @@ using Style = WheelMenu::Item::Style;
 const WheelMenu::Item kItems[App::MenuNav::Root::ID_COUNT] = {
     // ID_START
     { Style::Simple, "Start", nullptr, &poppins_semibold_35 },
-    // ID_LATEST_VO2
-    { Style::Simple, "Latest VO2\nMax score", nullptr, &poppins_semibold_25 },
+    // ID_HISTORY
+    { Style::Simple, "VO2 history" },
     // ID_GUIDE
     { Style::Simple, "How it works", nullptr, &poppins_semibold_25 },
     // ID_SETTINGS
@@ -94,9 +94,9 @@ void MainScreen::confirm()
                 ScreenManager::instance().startRun();
             }
         } break;
-        case Menu::ID_LATEST_VO2:
-            if (mModel.getLatestVo2()) {
-                ScreenManager::instance().goTo(ScreenId::LatestVo2);
+        case Menu::ID_HISTORY:
+            if (hasHistory()) {
+                ScreenManager::instance().goTo(ScreenId::Vo2History);
             }
             break;
         case Menu::ID_GUIDE:
@@ -112,10 +112,10 @@ void MainScreen::confirm()
 
 void MainScreen::updateBackground()
 {
-    // Start without a fix, or no stored VO2 result, is greyed out with R1 hidden.
+    // Start without a fix, or an empty history, is greyed out with R1 hidden.
     const uint16_t sel = mMenu->selected();
     const bool blocked = (sel == Menu::ID_START && !mGpsFix)
-                      || (sel == Menu::ID_LATEST_VO2 && !mModel.getLatestVo2());
+                      || (sel == Menu::ID_HISTORY && !hasHistory());
     mMenu->setBackground(blocked ? Color::GRAY_DARK : Color::TEAL_DARK);
     mButtons->setR1(blocked ? Widgets::Buttons::NONE : Widgets::Buttons::AMBER);
 }
@@ -150,7 +150,13 @@ void MainScreen::onSettings(const Settings& /*settings*/)
     mMenu->refresh();
 }
 
-void MainScreen::onLatestVo2()
+void MainScreen::onVo2History()
 {
     updateBackground();
+}
+
+bool MainScreen::hasHistory() const
+{
+    const Vo2History* h = mModel.getVo2History();
+    return h && !h->empty();
 }

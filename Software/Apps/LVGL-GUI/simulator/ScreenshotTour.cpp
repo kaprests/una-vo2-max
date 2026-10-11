@@ -30,8 +30,10 @@ struct Step {
 
 constexpr Step kFull[] = {
     {0,       6000, "01-main"},             // after the GPS fix
-    {Btn::L2, 1000, "02-main-latest"},
-    {Btn::R1, 1000, "03-latest-vo2"},
+    {Btn::L2, 1000, "02-main-history"},
+    {Btn::R1, 1000, "03-history-latest"},
+    {Btn::L2, 1000, "10-history-trend"},
+    {Btn::L2, 1000, "11-history-list"},
     {Btn::R2, 1000, nullptr},
     {Btn::L2, 1000, nullptr},
     {Btn::L2, 1000, nullptr},
@@ -81,6 +83,7 @@ void tick(lv_timer_t* timer)
     }
     if (sNext == sEnd) {
         // Skip the simulator's shutdown: it is slow and not needed here.
+        std::fflush(nullptr);
         std::_Exit(0);
     }
     const Step& step = *sNext++;

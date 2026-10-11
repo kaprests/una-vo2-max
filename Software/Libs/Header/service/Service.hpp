@@ -23,6 +23,7 @@
 #include "Commands.hpp"
 #include "WristTiltDetector.hpp"
 #include "Vo2MaxEstimator.hpp"
+#include "Vo2HistorySerializer.hpp"
 
 class Service : public WristTiltDetector::IListener
 {
@@ -66,8 +67,8 @@ private:
     SettingsSerializer        mSettingsSerializer;
     ActivitySummary           mSummary;
     ActivitySummarySerializer mActivitySummarySerializer;
-    ActivitySummary           mLatestVo2;
-    ActivitySummarySerializer mLatestVo2Serializer;
+    Vo2History                mVo2History;
+    Vo2HistorySerializer      mVo2HistorySerializer;
     ActivityWriter            mActivityWriter;
     SDK::TrackMapBuilder      mTrackMapBuilder;
 

@@ -5,9 +5,8 @@
  *          browsed with L1/L2.
  *
  * Port of the Run app's TrackSummaryView and its SummaryFace* containers.
- * Shows the current track (from the action menu while paused, R2 returns
- * there; or after a save, R1 leaves the app) or the latest VO2 max result
- * (from the main menu, R2 returns there).
+ * Reached from the action menu while paused (R2 returns there) or after a
+ * save (R1 leaves the app).
  ******************************************************************************
  */
 
@@ -23,9 +22,7 @@
 class TrackSummaryScreen : public Screen
 {
 public:
-    enum class Source : uint8_t { Track, LatestVo2 };
-
-    TrackSummaryScreen(Model& model, Source source);
+    explicit TrackSummaryScreen(Model& model);
 
     void onShow() override;
     void onKey(uint8_t code) override;
@@ -47,7 +44,6 @@ private:
     void buildFaceLaps();
 
     void setSummary(const ActivitySummary& s);
-    void setVo2(const Vo2Result& v);
     void showFace(uint8_t face);
     void updateIndicator();
     void fillLapRows();
@@ -55,12 +51,7 @@ private:
 
     lv_obj_t* mFaces[FACE_COUNT] = {};
 
-    // VO2 max
-    lv_obj_t* mVo2Date    = nullptr;
-    lv_obj_t* mVo2Value   = nullptr;
-    lv_obj_t* mVo2Unit    = nullptr;
-    lv_obj_t* mVo2Status  = nullptr;
-    lv_obj_t* mVo2Details = nullptr;
+    std::unique_ptr<Widgets::Vo2Card> mVo2;
 
     // Map + overview headers
     lv_obj_t* mMapDistance      = nullptr;
@@ -85,7 +76,6 @@ private:
     std::unique_ptr<Widgets::ScrollIndicator> mIndicator;
     std::unique_ptr<Widgets::Title>           mTitles[FACE_COUNT];
 
-    const Source mSource;
     uint8_t mFace       = FACE_VO2;
     bool    mIsImperial = false;
     bool    mExitOnR1   = false;

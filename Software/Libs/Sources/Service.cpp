@@ -63,7 +63,7 @@ Service::Service(SDK::Kernel &kernel)
         , mSettingsSerializer(mKernel, "settings.json")
         , mSummary{}
         , mActivitySummarySerializer(mKernel, "Activity/summary.json")
-        , mLatestVo2Serializer(mKernel, "Activity/latest_vo2.json")
+        , mVo2HistorySerializer(mKernel, "Activity/vo2_history.json")
         , mActivityWriter(mKernel, "Activity")
         , mTrackMapBuilder{}
         , mSensorGpsLocation(SDK::Sensor::Type::GPS_LOCATION, skSamplePeriod, skSampleLatency)
@@ -126,8 +126,8 @@ void Service::run()
     if (!mActivitySummarySerializer.load(mSummary)) {
         LOG_WARNING("Failed to load activity summary\n");
     }
-    if (mLatestVo2Serializer.load(mLatestVo2)) {
-        LOG_INFO("Latest VO2 max: %.1f\n", static_cast<double>(mLatestVo2.vo2.vo2max));
+    if (mVo2HistorySerializer.load(mVo2History)) {
+        LOG_INFO("VO2 history: %u entries\n", static_cast<unsigned>(mVo2History.count));
     }
 
     // Recover any activity a previous boot left unfinished (power loss /
@@ -755,9 +755,7 @@ void Service::sendInitialInfoToGui()
 
     SDK::send_msg<CustomMessage::SettingsUpd>(mKernel, mSettings, mIsImperial, mTimeFormat12h, hrThresholds, CustomMessage::kHrThresholdsCount, mMaxHrBpm);
     SDK::send_msg<CustomMessage::Summary>(mKernel, &mSummary);
-    if (mLatestVo2.vo2.valid()) {
-        SDK::send_msg<CustomMessage::Summary>(mKernel, &mLatestVo2, CustomMessage::LATEST_VO2);
-    }
+    SDK::send_msg<CustomMessage::Vo2HistoryUpd>(mKernel, &mVo2History);
     SDK::send_msg<CustomMessage::Battery>(mKernel, static_cast<uint8_t>(mBatterySoc.get()));
 }
 
@@ -1103,11 +1101,11 @@ void Service::stopTrack(bool discard)
         SDK::send_msg<CustomMessage::Summary>(mKernel, &mSummary);
 
         if (mSummary.vo2.valid()) {
-            mLatestVo2 = mSummary;
-            if (!mLatestVo2Serializer.save(mLatestVo2)) {
-                LOG_ERROR("Can't save latest VO2 max\n");
+            mVo2History.add({mSummary.utc, mSummary.vo2});
+            if (!mVo2HistorySerializer.save(mVo2History)) {
+                LOG_ERROR("Can't save VO2 history\n");
             }
-            SDK::send_msg<CustomMessage::Summary>(mKernel, &mLatestVo2, CustomMessage::LATEST_VO2);
+            SDK::send_msg<CustomMessage::Vo2HistoryUpd>(mKernel, &mVo2History);
         }
 
         // Save FIT file

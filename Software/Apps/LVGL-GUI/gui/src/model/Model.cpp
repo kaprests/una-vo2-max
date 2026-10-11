@@ -185,9 +185,9 @@ const ActivitySummary& Model::getTrackSummary() const
     return *mActivitySummary;
 }
 
-const ActivitySummary* Model::getLatestVo2() const
+const Vo2History* Model::getVo2History() const
 {
-    return mLatestVo2;
+    return mVo2History;
 }
 
 // Private
@@ -325,9 +325,9 @@ bool Model::customMessageHandler(SDK::MessageBase* message)
             mActivitySummary = static_cast<CustomMessage::Summary*>(message)->summary;
             break;
 
-        case CustomMessage::LATEST_VO2:
-            mLatestVo2 = static_cast<CustomMessage::Summary*>(message)->summary;
-            modelListener->onLatestVo2();
+        case CustomMessage::VO2_HISTORY:
+            mVo2History = static_cast<CustomMessage::Vo2HistoryUpd*>(message)->history;
+            modelListener->onVo2History();
             break;
 
         case CustomMessage::ACCESSORY_STATUS: {

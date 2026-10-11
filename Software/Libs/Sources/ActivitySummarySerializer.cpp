@@ -18,6 +18,8 @@
 #include "SDK/JSON/JsonStreamWriter.hpp"
 #include "SDK/JSON/JsonStreamReader.hpp"
 
+#include "Vo2Json.hpp"
+
 #define LOG_MODULE_PRX      "ActivitySummarySerializer"
 #define LOG_MODULE_LEVEL    LOG_LEVEL_DEBUG
 #include "SDK/UnaLogger/Logger.h"
@@ -80,12 +82,7 @@ bool ActivitySummarySerializer::save(const ActivitySummary& summary)
     writer.endArray();
 
     writer.startMap("vo2");
-    writer.add("confidence", static_cast<uint8_t>(summary.vo2.confidence));
-    writer.add("reason",     static_cast<uint8_t>(summary.vo2.reason));
-    writer.add("vo2max",     summary.vo2.vo2max);
-    writer.add("steady_sec", summary.vo2.steadySec);
-    writer.add("hr_range",   summary.vo2.hrRangeFrac);
-    writer.add("r2",         summary.vo2.r2);
+    Vo2Json::write(writer, summary.vo2);
     writer.endMap();
 
     writer.endMap();
@@ -197,18 +194,7 @@ bool ActivitySummarySerializer::load(ActivitySummary& summary)
         summary.laps.push_back(lap);
     }
 
-    uint8_t confidence = 0;
-    uint8_t reason     = 0;
-    if (reader.get("vo2.confidence", confidence) && reader.get("vo2.reason", reason)
-            && confidence <= static_cast<uint8_t>(Vo2Result::Confidence::HIGH)
-            && reason <= static_cast<uint8_t>(Vo2Result::Reason::OUT_OF_RANGE)) {
-        summary.vo2.confidence = static_cast<Vo2Result::Confidence>(confidence);
-        summary.vo2.reason     = static_cast<Vo2Result::Reason>(reason);
-        reader.get("vo2.vo2max",     summary.vo2.vo2max);
-        reader.get("vo2.steady_sec", summary.vo2.steadySec);
-        reader.get("vo2.hr_range",   summary.vo2.hrRangeFrac);
-        reader.get("vo2.r2",         summary.vo2.r2);
-    }
+    Vo2Json::read(reader, "vo2", summary.vo2);
 
 #if 1
     // Track map as HEX-String

@@ -26,6 +26,7 @@
 #include "Commands.hpp"
 #include "Settings.hpp"
 #include "ActivitySummary.hpp"
+#include "Vo2History.hpp"
 #include "Track.hpp"
 #include "AppMenu.hpp"
 
@@ -114,7 +115,7 @@ public:
     void discardTrack();
     bool isTrackSummaryAvailable() const;
     const ActivitySummary& getTrackSummary() const;
-    const ActivitySummary* getLatestVo2() const;
+    const Vo2History* getVo2History() const;
 
 private:
     // Fields required for GUI <-> Service communication
@@ -158,7 +159,7 @@ private:
     HoldConfirmMode        mHoldConfirmMode       = HoldConfirmMode::Discard;
     Track::State           mTrackState            {};
     const ActivitySummary* mActivitySummary = nullptr;
-    const ActivitySummary* mLatestVo2       = nullptr;
+    const Vo2History*      mVo2History      = nullptr;
     Track::Data            mTrackData             {};
 };
 

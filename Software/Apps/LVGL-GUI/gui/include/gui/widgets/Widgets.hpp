@@ -35,6 +35,7 @@
 #include "SDK/GUI/LVGL/Toggle.hpp"
 #include "SDK/TrackMap/TrackMapScreen.hpp"
 #include "Track.hpp"
+#include "Vo2Result.hpp"
 #include "gui/theme/Theme.hpp"
 
 namespace Widgets
@@ -185,6 +186,27 @@ private:
     lv_obj_t* mStart = nullptr;
     lv_obj_t* mEnd   = nullptr;
     std::vector<lv_point_precise_t> mPoints;
+};
+
+// -----------------------------------------------------------------------------
+/// "High" / "Medium" / "Low", or why there is no estimate.
+const char* vo2Status(const Vo2Result& v);
+uint32_t    vo2Color(Vo2Result::Confidence c);
+
+/// A VO2 max result on a 240 x 240 face: date, value, unit, status, details.
+class Vo2Card
+{
+public:
+    explicit Vo2Card(lv_obj_t* parent);
+    /// @p utc 0 hides the date.
+    void set(const Vo2Result& v, std::time_t utc = 0);
+
+private:
+    lv_obj_t* mDate    = nullptr;
+    lv_obj_t* mValue   = nullptr;
+    lv_obj_t* mUnit    = nullptr;
+    lv_obj_t* mStatus  = nullptr;
+    lv_obj_t* mDetails = nullptr;
 };
 
 } // namespace Widgets

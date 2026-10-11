@@ -55,14 +55,14 @@ description = "Build and run the Linux simulator"
 depends = ["sim-build"]
 usage = '''
 flag "--config <file>" help="Companion app config, e.g. simulator-configs/max-hr-190.json"
-flag "--summary <file>" help="Latest VO2 result, e.g. simulator-configs/latest-vo2-high.json"
+flag "--history <file>" help="VO2 history, e.g. simulator-configs/vo2-history.json"
 '''
 run = '''
 set -e
 fs=Software/Output
 mkdir -p "$fs/Activity"
 if [ -n "${usage_config:-}" ]; then cp "$usage_config" "$fs/app_config.json"; fi
-if [ -n "${usage_summary:-}" ]; then cp "$usage_summary" "$fs/Activity/latest_vo2.json"; fi
+if [ -n "${usage_history:-}" ]; then cp "$usage_history" "$fs/Activity/vo2_history.json"; fi
 cd Software/Apps/LVGL-GUI/simulator/build/bin
 ./{{vars.app}}Simulator
 '''

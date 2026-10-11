@@ -10,6 +10,7 @@
 #include <cmath>
 #include "gui/Assets.hpp"
 #include "gui/Format.hpp"
+#include "gui/Strings.hpp"
 
 #include <cstdio>
 
@@ -380,6 +381,74 @@ void TwoTonePicker::renderValue(bool leftActive, const char* left, const char* r
     }
     lv_label_set_text(mNext1, up1 ? up1 : "");
     lv_label_set_text(mNext2, up2 ? up2 : "");
+}
+
+// --- Vo2Card ---------------------------------------------------------------
+
+const char* vo2Status(const Vo2Result& v)
+{
+    using C = Vo2Result::Confidence;
+    using R = Vo2Result::Reason;
+    switch (v.confidence) {
+        case C::HIGH:   return "High";
+        case C::MEDIUM: return "Medium";
+        case C::LOW:    return "Low";
+        case C::NONE:   break;
+    }
+    switch (v.reason) {
+        case R::NO_MAX_HR:    return Strings::kNoMaxHr;
+        case R::LOW_HR_RANGE: return "Vary pace more";
+        case R::POOR_FIT:
+        case R::BAD_SLOPE:    return "HR off pace";
+        case R::OUT_OF_RANGE: return "Unrealistic";
+        default:              return "Not enough data";
+    }
+}
+
+uint32_t vo2Color(Vo2Result::Confidence c)
+{
+    switch (c) {
+        case Vo2Result::Confidence::HIGH:   return Color::GREEN;
+        case Vo2Result::Confidence::MEDIUM: return Color::YELLOW;
+        case Vo2Result::Confidence::LOW:    return Color::YELLOW_DARK;
+        default:                            return Color::GRAY;
+    }
+}
+
+Vo2Card::Vo2Card(lv_obj_t* parent)
+{
+    using F = Theme::Font;
+    mDate    = Theme::label(parent, F::Regular14, "", 0, 46, 240);
+    mValue   = Theme::label(parent, F::SemiBold60, Strings::kNoValue, 0, 58, 240);
+    mUnit    = Theme::label(parent, F::Regular16, "ml/kg/min", 0, 128, 240);
+    mStatus  = Theme::label(parent, F::Medium18, "", 20, 152, 200);
+    mDetails = Theme::label(parent, F::Regular14, "", 40, 180, 160);
+}
+
+void Vo2Card::set(const Vo2Result& v, std::time_t utc)
+{
+    char buf[24];
+    Theme::setHidden(mDate, utc == 0);
+    if (utc != 0) {
+        Fmt::date(buf, sizeof(buf), utc);
+        lv_label_set_text(mDate, buf);
+    }
+
+    const bool ok = v.valid();
+    if (ok) {
+        Fmt::fixed(buf, sizeof(buf), v.vo2max, 1);
+        lv_label_set_text(mValue, buf);
+        lv_label_set_text_fmt(mDetails, "%u min  HR %u%%  fit %u%%",
+                              static_cast<unsigned>(v.steadySec / 60),
+                              static_cast<unsigned>(v.hrRangeFrac * 100.0f + 0.5f),
+                              static_cast<unsigned>(v.r2 * 100.0f + 0.5f));
+    } else {
+        lv_label_set_text(mValue, Strings::kNoValue);
+    }
+    Theme::setHidden(mUnit, !ok);
+    Theme::setHidden(mDetails, !ok);
+    lv_label_set_text(mStatus, vo2Status(v));
+    lv_obj_set_style_text_color(mStatus, Theme::rgb(vo2Color(v.confidence)), LV_PART_MAIN);
 }
 
 } // namespace Widgets
