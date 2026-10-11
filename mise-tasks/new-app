@@ -37,10 +37,16 @@ sed -i -E \
   -e "s|^set\(OUTPUT_PATH .*|set(OUTPUT_PATH \"\${CMAKE_CURRENT_SOURCE_DIR}/../../../Output\")|" \
   "Software/Apps/$name-CMake/CMakeLists.txt"
 
-# Simulator target and asset script (it locates the SDK by relative path)
-sed -i "s/${from}Simulator/${name}Simulator/g" Software/Apps/LVGL-GUI/simulator/CMakeLists.txt
+# Simulator target and APP_ID, asset script (it locates the SDK by relative path)
+sim=Software/Apps/LVGL-GUI/simulator
+sed -i -E -e "s/${from}Simulator/${name}Simulator/g" -e "s/APP_ID=\"[0-9A-F]+\"/APP_ID=\"$app_id\"/" "$sim/CMakeLists.txt"
+rm -f "$sim/linux-check.sh"
 gen=Software/Apps/LVGL-GUI/assets/gen_assets.py
 [ -f "$gen" ] && sed -i -E 's|^SDK_ROOT = .*|SDK_ROOT = os.environ["UNA_SDK"]|' "$gen"
 
 sed -i -E "s/^app = .*/app = \"$name\"/" mise.toml
-echo "Created $name (APP_ID $app_id) from $src. Next: mise run build && mise run sim"
+echo "Created $name (APP_ID $app_id) from $src."
+example=$(basename "$src")
+echo "Review the remaining mentions of '$example' (display strings, window title, comments):"
+grep -rnI -i -e "$example" -e "$from" Software --exclude-dir=fonts --exclude-dir=images || true
+echo "Next: mise run build && mise run sim"
