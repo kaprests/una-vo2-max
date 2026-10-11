@@ -1,5 +1,11 @@
 # VO2 max estimator
 
+<p align="center">
+  <img src="docs/images/latest.png" width="240" alt="Latest VO2 max result">
+  <img src="docs/images/trend-1y.png" width="240" alt="12-month VO2 max trend">
+  <img src="docs/images/guide.png" width="240" alt="Run guide">
+</p>
+
 ## Setup
 
 Requires [mise](https://mise.jdx.dev). Linux (Arch or Debian/Ubuntu).
