@@ -1,6 +1,9 @@
 # Dev environment for UNA Watch apps. See README.md.
 # SDK docs: https://www.developers.unawatch.com/latest/sdk-setup.html
 
+[vars]
+app = ""   # set by `mise run new-app`
+
 [tools]
 uv = "latest"
 cmake = "4.4"
@@ -44,3 +47,24 @@ run = [
   "git -C una-sdk submodule update --init ThirdParty/lvgl",
   "uv sync",
 ]
+
+# Docs: sdk-setup.html#building-apps-manually and Simulator.html#linux-gcc
+[tasks.build]
+description = "Build the .uapp"
+dir = "Software/Apps/{{vars.app}}-CMake"
+run = ['cmake -G "Unix Makefiles" -S . -B build', 'cmake --build build -j']
+
+[tasks.sim-build]
+description = "Build the Linux simulator"
+dir = "Software/Apps/TouchGFX-GUI"
+run = 'make -f simulator/gcc/Makefile -j"$(nproc)"'
+
+[tasks.sim]
+description = "Build and run the Linux simulator"
+depends = ["sim-build"]
+dir = "Software/Apps/TouchGFX-GUI"
+run = "./build/bin/simulator.out"
+
+[tasks.clean]
+description = "Remove build output"
+run = "rm -rf Software/Apps/{{vars.app}}-CMake/build Software/Apps/TouchGFX-GUI/build"

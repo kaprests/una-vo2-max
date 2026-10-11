@@ -2,9 +2,8 @@
 name = "performance-stats-app"
 version = "0.1.0"
 description = "UNA Watch app"
-requires-python = ">=3.11"
+requires-python = ">=3.12,<3.13"
 # Mirrors una-sdk/Utilities/Scripts/app_packer/requirements.txt
-# Todo, should we build this pyproject config from that requirements.txt?
 dependencies = [
     "pyelftools>=0.29",
     "Pillow>=9.0.0",
