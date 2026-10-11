@@ -185,6 +185,11 @@ const ActivitySummary& Model::getTrackSummary() const
     return *mActivitySummary;
 }
 
+const ActivitySummary* Model::getLatestVo2() const
+{
+    return mLatestVo2;
+}
+
 // Private
 void Model::decIdleTimer()
 {
@@ -316,12 +321,14 @@ bool Model::customMessageHandler(SDK::MessageBase* message)
             modelListener->onLapChanged(static_cast<uint8_t>(msg->lapNum));
         } break;
 
-        case CustomMessage::SUMMARY: {
-            auto* msg = static_cast<CustomMessage::Summary*>(message);
-            if (msg->summary) {
-                mActivitySummary = msg->summary;
-                modelListener->onActivitySummary(*mActivitySummary);
-            }
+        case CustomMessage::SUMMARY:
+            mActivitySummary = static_cast<CustomMessage::Summary*>(message)->summary;
+            break;
+
+        case CustomMessage::LATEST_VO2: {
+            const ActivitySummary* s = static_cast<CustomMessage::Summary*>(message)->summary;
+            mLatestVo2 = s && s->vo2.confidence != Vo2Summary::Confidence::NONE ? s : nullptr;
+            modelListener->onLatestVo2();
         } break;
 
         case CustomMessage::ACCESSORY_STATUS: {

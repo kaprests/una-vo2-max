@@ -127,7 +127,8 @@ Screen* ScreenManager::create(ScreenId id)
         case ScreenId::TrackLap:                  return new TrackLapScreen(m);
         case ScreenId::TrackSaved:                return new TrackResultScreen(m, TrackResultScreen::Result::Saved);
         case ScreenId::TrackDiscarded:            return new TrackResultScreen(m, TrackResultScreen::Result::Discarded);
-        case ScreenId::TrackSummary:              return new TrackSummaryScreen(m);
+        case ScreenId::TrackSummary:              return new TrackSummaryScreen(m, TrackSummaryScreen::Source::Track);
+        case ScreenId::LatestVo2:                 return new TrackSummaryScreen(m, TrackSummaryScreen::Source::LatestVo2);
     }
     return nullptr;
 }

@@ -53,8 +53,19 @@ run = ["cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Debug", "cmake --build b
 [tasks.sim]
 description = "Build and run the Linux simulator"
 depends = ["sim-build"]
-dir = "Software/Apps/LVGL-GUI/simulator/build/bin"
-run = "./{{vars.app}}Simulator"
+usage = '''
+flag "--config <file>" help="Companion app config, e.g. simulator-configs/max-hr-190.json"
+flag "--summary <file>" help="Latest VO2 result, e.g. simulator-configs/latest-vo2-high.json"
+'''
+run = '''
+set -e
+fs=Software/Output
+mkdir -p "$fs/Activity"
+if [ -n "${usage_config:-}" ]; then cp "$usage_config" "$fs/app_config.json"; fi
+if [ -n "${usage_summary:-}" ]; then cp "$usage_summary" "$fs/Activity/latest_vo2.json"; fi
+cd Software/Apps/LVGL-GUI/simulator/build/bin
+./{{vars.app}}Simulator
+'''
 
 [tasks.assets]
 description = "Regenerate LVGL fonts and images"

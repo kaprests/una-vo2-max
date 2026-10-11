@@ -1,0 +1,21 @@
+{
+  "utc": 1791444600,
+  "time": 2700,
+  "distance": 7200.0,
+  "speed_avg": 2.667,
+  "elevation": 42.0,
+  "pace_avg": 0.375,
+  "hr_max": 176.0,
+  "hr_avg": 152.0,
+  "map": "",
+  "lap_count": 0,
+  "laps": [],
+  "vo2": {
+    "confidence": 2,
+    "reason": 0,
+    "vo2max": 51.8,
+    "steady_sec": 780,
+    "hr_range": 0.16,
+    "r2": 0.68
+  }
+}

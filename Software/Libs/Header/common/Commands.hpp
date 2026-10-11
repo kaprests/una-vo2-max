@@ -32,6 +32,7 @@ namespace CustomMessage {
     constexpr SDK::MessageType::Type TRACK_DATA_UPDATE  = 0x00000006;
     constexpr SDK::MessageType::Type LAP_END                  = 0x00000007;
     constexpr SDK::MessageType::Type SUMMARY                  = 0x00000008;
+    constexpr SDK::MessageType::Type LATEST_VO2               = 0x00000013;
     constexpr SDK::MessageType::Type ACCESSORY_STATUS          = 0x00000012;
 
     // GUI --> Service
@@ -162,18 +163,15 @@ namespace CustomMessage {
         }
     };
 
+    /// Non-owning pointer to a Service-owned summary. Type is SUMMARY (last
+    /// run) or LATEST_VO2 (last run with a VO2 max estimate).
     struct Summary : public SDK::MessageBase {
-        const ActivitySummary* summary; ///< Non-owning pointer; receiver must copy before releaseMessage
-        Summary()
-            : SDK::MessageBase(SUMMARY)
-            , summary(nullptr)
-        {}
+        const ActivitySummary* summary = nullptr;
 
-        explicit Summary(const ActivitySummary* summaryPtr)
-            : Summary()
-        {
-            this->summary = summaryPtr;
-        }
+        explicit Summary(const ActivitySummary* summary = nullptr, SDK::MessageType::Type type = SUMMARY)
+            : SDK::MessageBase(type)
+            , summary(summary)
+        {}
     };
 
     // External-accessory link status forwarded from the kernel's

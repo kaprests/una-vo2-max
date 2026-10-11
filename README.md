@@ -45,10 +45,14 @@ title, comments) for you to review/edit by hand.
 ```sh
 mise run build   # .uapp -> Output/
 mise run sim     # build + run the Linux simulator (keys 1-4 = L1 L2 R1 R2, 5 = wrist, Esc = quit)
+mise run sim --config simulator-configs/max-hr-190.json --summary simulator-configs/latest-vo2-high.json
 mise run assets  # regenerate LVGL fonts/images
 mise run test    # host unit tests (GoogleTest)
 mise run clean
 ```
+
+`--config` and `--summary` copy sample files from `simulator-configs/` into the simulator's
+file system (`Software/Output`); they stay there for later runs.
 
 - Firmware build: https://www.developers.unawatch.com/latest/sdk-setup.html
 - Linux simulator: https://www.developers.unawatch.com/latest/Tutorials/RunLVGL/ARCHITECTURE.html

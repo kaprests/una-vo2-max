@@ -114,6 +114,7 @@ public:
     void discardTrack();
     bool isTrackSummaryAvailable() const;
     const ActivitySummary& getTrackSummary() const;
+    const ActivitySummary* getLatestVo2() const;
 
 private:
     // Fields required for GUI <-> Service communication
@@ -157,6 +158,7 @@ private:
     HoldConfirmMode        mHoldConfirmMode       = HoldConfirmMode::Discard;
     Track::State           mTrackState            {};
     const ActivitySummary* mActivitySummary = nullptr;
+    const ActivitySummary* mLatestVo2       = nullptr;
     Track::Data            mTrackData             {};
 };
 

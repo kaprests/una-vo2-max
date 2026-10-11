@@ -12,11 +12,47 @@
 #include "gui/Format.hpp"
 #include "gui/Strings.hpp"
 
+#include <ctime>
+
 using namespace SDK::GUI;
 using F = Theme::Font;
 
-TrackSummaryScreen::TrackSummaryScreen(Model& model)
+namespace
+{
+const char* vo2Status(const Vo2Summary& v)
+{
+    using C = Vo2Summary::Confidence;
+    using R = Vo2Summary::Reason;
+    switch (v.confidence) {
+        case C::HIGH:   return "High";
+        case C::MEDIUM: return "Medium";
+        case C::LOW:    return "Low";
+        case C::NONE:   break;
+    }
+    switch (v.reason) {
+        case R::NO_MAX_HR:    return "Set max HR";
+        case R::LOW_HR_RANGE: return "Vary pace more";
+        case R::POOR_FIT:
+        case R::BAD_SLOPE:    return "HR off pace";
+        case R::OUT_OF_RANGE: return "Unrealistic";
+        default:              return "Not enough data";
+    }
+}
+
+uint32_t vo2StatusColor(Vo2Summary::Confidence c)
+{
+    switch (c) {
+        case Vo2Summary::Confidence::HIGH:   return Color::GREEN;
+        case Vo2Summary::Confidence::MEDIUM: return Color::YELLOW;
+        case Vo2Summary::Confidence::LOW:    return Color::YELLOW_DARK;
+        default:                             return Color::GRAY;
+    }
+}
+} // namespace
+
+TrackSummaryScreen::TrackSummaryScreen(Model& model, Source source)
     : Screen(model)
+    , mSource(source)
 {
 }
 
@@ -26,12 +62,23 @@ void TrackSummaryScreen::build()
     mButtons->set(Widgets::Buttons::NONE, Widgets::Buttons::NONE,
                   Widgets::Buttons::NONE, Widgets::Buttons::NONE);
     mIndicator = std::make_unique<Widgets::ScrollIndicator>(mRoot, Widgets::ScrollIndicator::kSmall);
-    mIndicator->setCount(3);
-
     buildFaceLaps();
     buildFaceHeartRate();
     buildFaceOverview();
     buildFaceMap();
+    buildFaceVo2();
+    mIndicator->setCount(FACE_LAPS);
+}
+
+void TrackSummaryScreen::buildFaceVo2()
+{
+    lv_obj_t* f = mFaces[FACE_VO2] = Theme::container(mRoot, 0, 0, 240, 240);
+    mVo2Date    = Theme::label(f, F::Regular14, "", 0, 46, 240);
+    mVo2Value   = Theme::label(f, F::SemiBold60, Strings::kNoValue, 0, 58, 240);
+    mVo2Unit    = Theme::label(f, F::Regular16, "ml/kg/min", 0, 128, 240);
+    mVo2Status  = Theme::label(f, F::Medium18, "", 20, 152, 200);
+    mVo2Details = Theme::label(f, F::Regular14, "", 40, 180, 160);
+    mTitles[FACE_VO2] = std::make_unique<Widgets::Title>(f, "VO2 MAX");
 }
 
 void TrackSummaryScreen::buildFaceMap()
@@ -101,19 +148,30 @@ void TrackSummaryScreen::onShow()
 {
     mModel.resetIdleTimer();
     mIsImperial = mModel.isUnitsImperial();
-    mPaused     = mModel.isTrackPaused();
-    if (mModel.isTrackSummaryAvailable()) {
-        setSummary(mModel.getTrackSummary());
+
+    const bool latest = mSource == Source::LatestVo2;
+    const ActivitySummary* s = latest                             ? mModel.getLatestVo2()
+                             : mModel.isTrackSummaryAvailable() ? &mModel.getTrackSummary()
+                                                                : nullptr;
+    if (s) {
+        setSummary(*s);
     }
-    // While paused the way back is R2 (to the action menu); after a save R1 leaves.
-    if (mPaused) {
-        mButtons->set(Widgets::Buttons::NONE, Widgets::Buttons::NONE,
-                      Widgets::Buttons::NONE, Widgets::Buttons::AMBER);
-    } else {
-        mButtons->set(Widgets::Buttons::NONE, Widgets::Buttons::NONE,
-                      Widgets::Buttons::AMBER, Widgets::Buttons::NONE);
+    Theme::setHidden(mVo2Date, !(latest && s));
+    if (latest && s) {
+        static constexpr const char* kMonths[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        std::tm local{};
+        localtime_r(&s->utc, &local);
+        lv_label_set_text_fmt(mVo2Date, "%d %s %d", local.tm_mday, kMonths[local.tm_mon], 1900 + local.tm_year);
     }
-    showFace(FACE_MAP);
+
+    // After a save R1 leaves the app; otherwise R2 goes back.
+    namespace Btn = SDK::GUI::Button;
+    mExitKey = !latest && !mModel.isTrackPaused() ? Btn::R1 : Btn::R2;
+    using B = Widgets::Buttons;
+    mButtons->set(B::NONE, B::NONE, mExitKey == Btn::R1 ? B::AMBER : B::NONE,
+                  mExitKey == Btn::R2 ? B::AMBER : B::NONE);
+    showFace(FACE_VO2);
 }
 
 void TrackSummaryScreen::setSummary(const ActivitySummary& s)
@@ -137,6 +195,7 @@ void TrackSummaryScreen::setSummary(const ActivitySummary& s)
     lv_label_set_text(mAvgHr, buf);
 
     mMap->setMap(s.map);
+    setVo2(s.vo2);
 
     mLaps = &s.laps;
     lv_label_set_text_fmt(mLapsCount, "%lu LAPS", static_cast<unsigned long>(s.laps.size()));
@@ -151,8 +210,28 @@ void TrackSummaryScreen::setSummary(const ActivitySummary& s)
 
     mLapPage  = 0;
     mLapPages = s.laps.empty() ? 0 : static_cast<uint8_t>((s.laps.size() + kLapPageSize - 1) / kLapPageSize);
-    mIndicator->setCount(static_cast<uint16_t>(3 + mLapPages));
+    mIndicator->setCount(static_cast<uint16_t>(FACE_LAPS + mLapPages));
     fillLapRows();
+}
+
+void TrackSummaryScreen::setVo2(const Vo2Summary& v)
+{
+    const bool ok = v.confidence != Vo2Summary::Confidence::NONE;
+    if (ok) {
+        char buf[16];
+        Fmt::fixed(buf, sizeof(buf), v.vo2max, 1);
+        lv_label_set_text(mVo2Value, buf);
+        lv_label_set_text_fmt(mVo2Details, "%u min  HR %u%%  fit %u%%",
+                              static_cast<unsigned>(v.steadySec / 60),
+                              static_cast<unsigned>(v.hrRangeFrac * 100.0f + 0.5f),
+                              static_cast<unsigned>(v.r2 * 100.0f + 0.5f));
+    } else {
+        lv_label_set_text(mVo2Value, Strings::kNoValue);
+    }
+    Theme::setHidden(mVo2Unit, !ok);
+    Theme::setHidden(mVo2Details, !ok);
+    lv_label_set_text(mVo2Status, vo2Status(v));
+    lv_obj_set_style_text_color(mVo2Status, Theme::rgb(vo2StatusColor(v.confidence)), LV_PART_MAIN);
 }
 
 void TrackSummaryScreen::fillLapRows()
@@ -184,12 +263,8 @@ void TrackSummaryScreen::fillLapRows()
 void TrackSummaryScreen::showFace(uint8_t face)
 {
     mFace = face;
-    for (uint8_t i = 0; i < 4; ++i) {
-        if (i == face) {
-            lv_obj_remove_flag(mFaces[i], LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_add_flag(mFaces[i], LV_OBJ_FLAG_HIDDEN);
-        }
+    for (uint8_t i = 0; i < FACE_COUNT; ++i) {
+        Theme::setHidden(mFaces[i], i != face);
     }
     updateIndicator();
 }
@@ -225,31 +300,24 @@ void TrackSummaryScreen::onKey(uint8_t code)
                 } else {
                     showFace(mFace - 1);
                 }
-            } else if (mFace > FACE_MAP) {
+            } else if (mFace > FACE_VO2) {
                 showFace(mFace - 1);
             }
             break;
 
-        case Btn::R1:
-            if (!mPaused) {
-                backToTrack();
-            }
-            break;
-
-        case Btn::R2:
-            if (mPaused) {
-                backToTrack();
-            }
-            break;
-
         default:
+            if (code == mExitKey) {
+                leave();
+            }
             break;
     }
 }
 
-void TrackSummaryScreen::backToTrack()
+void TrackSummaryScreen::leave()
 {
-    if (mModel.isTrackPaused()) {
+    if (mSource == Source::LatestVo2) {
+        ScreenManager::instance().goTo(ScreenId::Main);
+    } else if (mModel.isTrackPaused()) {
         ScreenManager::instance().goTo(ScreenId::TrackAction);
     } else {
         mModel.exitApp();

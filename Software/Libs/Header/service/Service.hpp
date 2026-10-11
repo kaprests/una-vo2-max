@@ -22,6 +22,7 @@
 #include "ActivityWriter.hpp"
 #include "Commands.hpp"
 #include "WristTiltDetector.hpp"
+#include "Vo2MaxEstimator.hpp"
 
 class Service : public WristTiltDetector::IListener
 {
@@ -65,6 +66,8 @@ private:
     SettingsSerializer        mSettingsSerializer;
     ActivitySummary           mSummary;
     ActivitySummarySerializer mActivitySummarySerializer;
+    ActivitySummary           mLatestVo2;
+    ActivitySummarySerializer mLatestVo2Serializer;
     ActivityWriter            mActivityWriter;
     SDK::TrackMapBuilder      mTrackMapBuilder;
 
@@ -163,6 +166,7 @@ private:
     // -- Wrist tilt -----------------------------------------------------------
 
     WristTiltDetector mWristTiltDetector;
+    Vo2MaxEstimator   mVo2Estimator;
 
     // -- Outdoor stride calibrator ---------------------------------------
 

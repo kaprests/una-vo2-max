@@ -18,7 +18,6 @@
 
 #include "Settings.hpp"
 #include "Track.hpp"
-#include "ActivitySummary.hpp"
 
 class Model;
 
@@ -46,7 +45,7 @@ public:
     virtual void onTrackState(const Track::State& state) { (void)state; }
     virtual void onTrackData(const Track::Data& data) { (void)data; }
     virtual void onLapChanged(uint8_t lapEnd) { (void)lapEnd; }
-    virtual void onActivitySummary(const ActivitySummary& summary) { (void)summary; }
+    virtual void onLatestVo2() {}
     virtual void onAccessoryStatus(uint8_t state, const char* name) { (void)state; (void)name; }
 
 protected:

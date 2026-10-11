@@ -10,7 +10,6 @@
 #include "ActivitySummary.hpp"
 #include "Track.hpp"
 #include "AppConfigFields.hpp"
-#include "Vo2MaxEstimator.hpp"
 #include "SDK/Tools/FirmwareVersion.hpp"
 #include "SDK/Messages/SensorLayerMessages.hpp"
 #include "SDK/Messages/AccessoryMessages.hpp"
@@ -55,6 +54,16 @@ static float speedFromTotals(float distanceM, float activeTimeS)
     return (activeTimeS > 0.0f) ? (distanceM / activeTimeS) : 0.0f;
 }
 
+// Vo2Summary mirrors the estimator's enums value for value.
+static_assert(static_cast<int>(Vo2MaxEstimator::Confidence::HIGH) == static_cast<int>(Vo2Summary::Confidence::HIGH));
+static_assert(static_cast<int>(Vo2MaxEstimator::Reason::OUT_OF_RANGE) == static_cast<int>(Vo2Summary::Reason::OUT_OF_RANGE));
+
+static Vo2Summary toSummary(const Vo2MaxEstimator::Result& r)
+{
+    return {static_cast<Vo2Summary::Confidence>(r.confidence), static_cast<Vo2Summary::Reason>(r.reason),
+            r.vo2max, r.steadySec, r.hrRangeFrac, r.r2};
+}
+
 } // namespace
 
 Service::Service(SDK::Kernel &kernel)
@@ -64,6 +73,7 @@ Service::Service(SDK::Kernel &kernel)
         , mSettingsSerializer(mKernel, "settings.json")
         , mSummary{}
         , mActivitySummarySerializer(mKernel, "Activity/summary.json")
+        , mLatestVo2Serializer(mKernel, "Activity/latest_vo2.json")
         , mActivityWriter(mKernel, "Activity")
         , mTrackMapBuilder{}
         , mSensorGpsLocation(SDK::Sensor::Type::GPS_LOCATION, skSamplePeriod, skSampleLatency)
@@ -125,6 +135,9 @@ void Service::run()
     // Get summary
     if (!mActivitySummarySerializer.load(mSummary)) {
         LOG_WARNING("Failed to load activity summary\n");
+    }
+    if (mLatestVo2Serializer.load(mLatestVo2)) {
+        LOG_INFO("Latest VO2 max: %.1f\n", static_cast<double>(mLatestVo2.vo2.vo2max));
     }
 
     // Recover any activity a previous boot left unfinished (power loss /
@@ -752,6 +765,7 @@ void Service::sendInitialInfoToGui()
 
     SDK::send_msg<CustomMessage::SettingsUpd>(mKernel, mSettings, mIsImperial, mTimeFormat12h, hrThresholds, CustomMessage::kHrThresholdsCount, mMaxHrBpm);
     SDK::send_msg<CustomMessage::Summary>(mKernel, &mSummary);
+    SDK::send_msg<CustomMessage::Summary>(mKernel, &mLatestVo2, CustomMessage::LATEST_VO2);
     SDK::send_msg<CustomMessage::Battery>(mKernel, static_cast<uint8_t>(mBatterySoc.get()));
 }
 
@@ -794,6 +808,7 @@ void Service::startTrack(std::time_t utc)
     mLapNotEmpty = false;
 
     mSummary = ActivitySummary{};
+    mVo2Estimator.reset();
     mSummary.laps.reserve(10);
 
     // Configure TrackMapBuilder
@@ -913,6 +928,10 @@ void Service::processTrack()
 
             mCalibrator.ingestSample(cs);
         }
+
+        mVo2Estimator.addSample({mHrCounter.getCurrent(), static_cast<uint8_t>(mTrackData.hrTrustLevel),
+                                 mGpsSpeedValid ? mGpsSpeedMs : 0.0f,
+                                 mGradeData.gradePct, mGradeData.gradeValid});
 
         // Save record to the FIT file
         ActivityWriter::RecordData fitRecord = prepareRecordData();
@@ -1060,6 +1079,7 @@ void Service::buildPartialSummary()
     mSummary.hrMax     = mHrCounter.getMaximum();
     mSummary.hrAvg     = mHrCounter.getAverage();
     mSummary.map       = mTrackMapBuilder.build(skMapMaxPoints);
+    mSummary.vo2       = toSummary(mVo2Estimator.result(mMaxHrBpm));
 }
 
 void Service::stopTrack(bool discard)
@@ -1089,6 +1109,14 @@ void Service::stopTrack(bool discard)
             LOG_ERROR("Can't save activity summary\n");
         }
         SDK::send_msg<CustomMessage::Summary>(mKernel, &mSummary);
+
+        if (mSummary.vo2.confidence != Vo2Summary::Confidence::NONE) {
+            mLatestVo2 = mSummary;
+            if (!mLatestVo2Serializer.save(mLatestVo2)) {
+                LOG_ERROR("Can't save latest VO2 max\n");
+            }
+            SDK::send_msg<CustomMessage::Summary>(mKernel, &mLatestVo2, CustomMessage::LATEST_VO2);
+        }
 
         // Save FIT file
         ActivityWriter::TrackData fitTrack{};

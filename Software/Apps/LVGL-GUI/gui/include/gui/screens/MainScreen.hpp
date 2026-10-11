@@ -31,6 +31,7 @@ public:
     // ModelListener
     void onIdleTimeout() override;
     void onSettings(const Settings& settings) override;
+    void onLatestVo2() override;
     void onGpsFix(bool acquired) override;
     void onAccessoryStatus(uint8_t state, const char* name) override;
 

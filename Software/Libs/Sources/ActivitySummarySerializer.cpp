@@ -79,6 +79,15 @@ bool ActivitySummarySerializer::save(const ActivitySummary& summary)
     }
     writer.endArray();
 
+    writer.startMap("vo2");
+    writer.add("confidence", static_cast<uint8_t>(summary.vo2.confidence));
+    writer.add("reason",     static_cast<uint8_t>(summary.vo2.reason));
+    writer.add("vo2max",     summary.vo2.vo2max);
+    writer.add("steady_sec", summary.vo2.steadySec);
+    writer.add("hr_range",   summary.vo2.hrRangeFrac);
+    writer.add("r2",         summary.vo2.r2);
+    writer.endMap();
+
     writer.endMap();
 
     file->flush();
@@ -186,6 +195,17 @@ bool ActivitySummarySerializer::load(ActivitySummary& summary)
         reader.get(query, lap.paceAvg);
 
         summary.laps.push_back(lap);
+    }
+
+    uint8_t confidence = 0;
+    uint8_t reason     = 0;
+    if (reader.get("vo2.confidence", confidence) && reader.get("vo2.reason", reason)) {
+        summary.vo2.confidence = static_cast<Vo2Summary::Confidence>(confidence);
+        summary.vo2.reason     = static_cast<Vo2Summary::Reason>(reason);
+        reader.get("vo2.vo2max",     summary.vo2.vo2max);
+        reader.get("vo2.steady_sec", summary.vo2.steadySec);
+        reader.get("vo2.hr_range",   summary.vo2.hrRangeFrac);
+        reader.get("vo2.r2",         summary.vo2.r2);
     }
 
 #if 1

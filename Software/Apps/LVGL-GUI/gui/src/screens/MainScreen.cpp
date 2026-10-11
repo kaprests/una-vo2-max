@@ -24,6 +24,8 @@ using Style = WheelMenu::Item::Style;
 const WheelMenu::Item kItems[App::MenuNav::Root::ID_COUNT] = {
     // ID_START
     { Style::Simple, "Start", nullptr, &poppins_semibold_35 },
+    // ID_LATEST_VO2
+    { Style::Simple, "Latest VO2\nMax score", nullptr, &poppins_semibold_25 },
     // ID_SETTINGS
     { Style::Simple, "Settings" },
 };
@@ -89,6 +91,11 @@ void MainScreen::confirm()
                 ScreenManager::instance().goTo(ScreenId::TrackStartConfirm);
             }
             break;
+        case Menu::ID_LATEST_VO2:
+            if (mModel.getLatestVo2()) {
+                ScreenManager::instance().goTo(ScreenId::LatestVo2);
+            }
+            break;
         case Menu::ID_SETTINGS:
             ScreenManager::instance().goTo(ScreenId::MenuSettings);
             break;
@@ -99,10 +106,12 @@ void MainScreen::confirm()
 
 void MainScreen::updateBackground()
 {
-    // Start without a fix is greyed out and R1 hidden; everything else is live.
-    const bool startBlocked = mMenu->selected() == Menu::ID_START && !mGpsFix;
-    mMenu->setBackground(startBlocked ? Color::GRAY_DARK : Color::TEAL_DARK);
-    mButtons->setR1(startBlocked ? Widgets::Buttons::NONE : Widgets::Buttons::AMBER);
+    // Start without a fix, or no stored VO2 result, is greyed out with R1 hidden.
+    const uint16_t sel = mMenu->selected();
+    const bool blocked = (sel == Menu::ID_START && !mGpsFix)
+                      || (sel == Menu::ID_LATEST_VO2 && !mModel.getLatestVo2());
+    mMenu->setBackground(blocked ? Color::GRAY_DARK : Color::TEAL_DARK);
+    mButtons->setR1(blocked ? Widgets::Buttons::NONE : Widgets::Buttons::AMBER);
 }
 
 void MainScreen::onIdleTimeout()
@@ -127,4 +136,9 @@ void MainScreen::onAccessoryStatus(uint8_t state, const char* /*name*/)
 void MainScreen::onSettings(const Settings& /*settings*/)
 {
     Theme::setHidden(mMaxHrHint, mModel.getMaxHrBpm() != 0);
+}
+
+void MainScreen::onLatestVo2()
+{
+    updateBackground();
 }

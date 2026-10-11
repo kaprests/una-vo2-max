@@ -38,6 +38,7 @@ enum class ScreenId : uint8_t {
     TrackSaved,
     TrackDiscarded,
     TrackSummary,
+    LatestVo2,
 };
 
 class ScreenManager
