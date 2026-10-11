@@ -1,8 +1,4 @@
-# RunLVGL -- the Run activity app with its GUI process built on LVGL.
-#
-# The service process is a copy of Running's; only the GUI differs. Compare
-# with ../../../../Running/Software/Apps/Running-CMake/CMakeLists.txt: the
-# TOUCHGFX_* lines become GUI_PATH plus the *_GUI_LVGL SDK variables.
+# VO2Max -- firmware build: the service and the LVGL GUI process, packed into a .uapp.
 cmake_minimum_required(VERSION 3.21)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
@@ -32,7 +28,7 @@ include($ENV{UNA_SDK}/cmake/una-app.cmake)
 # UNA_SDK_DEFINES_GUI_LVGL
 include($ENV{UNA_SDK}/cmake/una-sdk.cmake)
 
-# Includes LIBS_SOURCES, LIBS_INCLUDE_DIRS
+# Includes LIBS_SOURCES, LIBS_INCLUDE_DIRS (+ LIBS_COMMON_/SERVICE_INCLUDE_DIRS)
 include(${LIBS_PATH}/libs.cmake)
 
 # Includes GUI_APP_SOURCES, GUI_APP_INCLUDE_DIRS
@@ -63,7 +59,7 @@ set(GUI_SOURCES
     ${UNA_SDK_SOURCES_GUI_LVGL}
 )
 set(GUI_INCLUDE_DIRS
-    ${LIBS_INCLUDE_DIRS}
+    ${LIBS_COMMON_INCLUDE_DIRS}
     ${UNA_SDK_INCLUDE_DIRS_COMMON}
     ${UNA_SDK_INCLUDE_DIRS_GUI_LVGL}
     ${GUI_APP_INCLUDE_DIRS}
@@ -72,9 +68,9 @@ set(GUI_COMPILE_DEFINITIONS
     ${UNA_SDK_DEFINES_GUI_LVGL}
 )
 # Frame timing in the syslog, one line per 100 kernel ticks (see the LVGL port).
-# For measuring, not for shipping: cmake -DRUNLVGL_FRAME_STATS=ON ...
-option(RUNLVGL_FRAME_STATS "Log frame timing statistics from the GUI process" OFF)
-if(RUNLVGL_FRAME_STATS)
+# For measuring, not for shipping: cmake -DVO2MAX_FRAME_STATS=ON ...
+option(VO2MAX_FRAME_STATS "Log frame timing statistics from the GUI process" OFF)
+if(VO2MAX_FRAME_STATS)
     list(APPEND GUI_COMPILE_DEFINITIONS UNA_LVGL_FRAME_STATS=1)
 endif()
 # LVGL's software renderer recurses deeper than TouchGFX; give the GUI task

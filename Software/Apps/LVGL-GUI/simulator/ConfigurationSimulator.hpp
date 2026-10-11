@@ -1,7 +1,7 @@
 /**
  ******************************************************************************
  * @file    ConfigurationSimulator.hpp
- * @brief   Simulated sensor settings for the RunLVGL PC simulator.
+ * @brief   Simulated sensor settings for the VO2Max PC simulator.
  *
  * Read by the SDK's simulated sensor layer (SDK/Libs/Source/Simulator). The
  * values match the Running app's simulator so both behave the same.

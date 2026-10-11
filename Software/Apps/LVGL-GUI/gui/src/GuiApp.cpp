@@ -1,7 +1,7 @@
 /**
  ******************************************************************************
  * @file    GuiApp.cpp
- * @brief   RunLVGL GUI entry: builds the model and shows the first screen.
+ * @brief   VO2Max GUI entry: builds the model and shows the first screen.
  *
  * una_lvgl_app_init() is the hook the SDK's LVGL entry point calls once LVGL
  * and the display are up (Libs/Source/AppSystem/EntryPoint/LVGL/main.cpp).

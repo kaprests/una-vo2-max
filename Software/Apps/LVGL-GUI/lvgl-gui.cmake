@@ -1,4 +1,4 @@
-# Sources and include directories of the RunLVGL GUI process (the LVGL
+# Sources and include directories of the VO2Max GUI process (the LVGL
 # counterpart of TouchGFX-GUI/touchgfx.cmake). Generated font and image C
 # files live under assets/ and are committed, so no converter is needed to
 # build.

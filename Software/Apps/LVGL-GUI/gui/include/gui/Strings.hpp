@@ -13,7 +13,7 @@
 
 namespace Strings
 {
-inline constexpr const char* kAppNameUc = "RUNLVGL";
+inline constexpr const char* kAppNameUc = "VO2 MAX";
 inline constexpr const char* kKm        = "km";
 inline constexpr const char* kMi        = "mi";
 inline constexpr const char* kNoValue   = "---";

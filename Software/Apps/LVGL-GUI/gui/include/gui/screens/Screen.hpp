@@ -1,7 +1,7 @@
 /**
  ******************************************************************************
  * @file    Screen.hpp
- * @brief   Base class of every RunLVGL screen.
+ * @brief   Base class of every VO2Max screen.
  *
  * A Screen owns one LVGL screen object (lv_obj_create(nullptr)), receives the
  * kernel's button codes through LV_EVENT_KEY on that object, and is the

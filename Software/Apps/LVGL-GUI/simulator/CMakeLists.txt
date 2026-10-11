@@ -1,4 +1,4 @@
-# RunLVGL PC simulator: the app's service and LVGL GUI processes running
+# VO2Max PC simulator: the app's service and LVGL GUI processes running
 # against the SDK's mock kernel, with the display in an SDL2 window.
 #
 # Needs a host C++ compiler, CMake, Ninja (or a Visual Studio generator) and
@@ -71,7 +71,7 @@ target_include_directories(VO2MaxSimulator PRIVATE
 target_compile_definitions(VO2MaxSimulator PRIVATE
     ${UNA_SDK_DEFINES_SIMULATOR}
     ${UNA_SDK_DEFINES_GUI_LVGL}
-    APP_ID="A1B8E3F04C7D925E"
+    APP_ID="DDBF14BBA60D533F"
     DEV_ID="UNA Simulator"
     BUILD_VERSION="1.0.0-sim"
 )

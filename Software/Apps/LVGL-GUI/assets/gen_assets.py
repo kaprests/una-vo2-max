@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the RunLVGL GUI's font and image C files.
+"""Regenerate the VO2Max GUI's font and image C files.
 
 Fonts:  Poppins faces -> LVGL fonts through lv_font_conv, run via npx so Node is
         the only prerequisite. 2 bits per pixel like the TouchGFX build, and
