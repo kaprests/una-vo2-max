@@ -1,5 +1,5 @@
 [vars]
-app = "" # set by `mise run new-app`
+app = "VO2Max"
 
 [tools]
 uv = "latest"

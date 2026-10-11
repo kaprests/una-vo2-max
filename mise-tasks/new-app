@@ -31,6 +31,7 @@ app_id=$(python3 -c "import hashlib,sys; print(hashlib.md5(sys.argv[1].encode())
 sed -i -E \
   -e "s/^set\(APP_NAME .*/set(APP_NAME \"$name\")/" \
   -e "s/^set\(APP_USER_NAME .*/set(APP_USER_NAME \"$name\")/" \
+  -e "s/^set\(APP_FILE_NAME .*/set(APP_FILE_NAME \"$name\")/" \
   -e "s/^set\(APP_ID .*/set(APP_ID \"$app_id\")/" \
   "Software/Apps/$name-CMake/CMakeLists.txt"
 
