@@ -55,5 +55,15 @@ mise run clean
 `--config` and `--summary` copy sample files from `simulator-configs/` into the simulator's
 file system (`Software/Output`); they stay there for later runs.
 
+## Releasing
+
+```sh
+git tag apps-v0.1.0     # must match appVersion in Output/app-manifest.json
+mise run package        # -> dist/VO2Max_0.1.0.zip
+```
+
+Upload the zip on the app's **Version** tab at https://apps.unawatch.com and release it
+([docs](https://www.developers.unawatch.com/latest/deploy.html#sharing-the-apps)).
+
 - Firmware build: https://www.developers.unawatch.com/latest/sdk-setup.html
 - Linux simulator: https://www.developers.unawatch.com/latest/Tutorials/RunLVGL/ARCHITECTURE.html

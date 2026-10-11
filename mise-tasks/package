@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+#MISE description="Build a release zip for the UNA app store from an apps-v* tag"
+#
+# Steps: https://www.developers.unawatch.com/latest/deploy.html#sharing-the-apps
+set -euo pipefail
+
+app=$(sed -nE 's/^app = "([^"]+)".*/\1/p' mise.toml)
+manifest=Output/app-manifest.json
+
+[ -z "$(git status --porcelain)" ] || { echo "Uncommitted changes; commit or stash first." >&2; exit 1; }
+# The SDK's una-version.sh reads apps-vX.Y.Z tags (see una-app.cmake).
+tag=$(git describe --exact-match --tags --match 'apps-v*' HEAD 2>/dev/null) ||
+  { echo "HEAD is not on an apps-v* tag (e.g. git tag apps-v0.1.0)." >&2; exit 1; }
+version=${tag#apps-v}
+uapp="${app}_${version}.uapp"
+
+# Fresh build dir: the version is read from git at configure time.
+build=$(mktemp -d)
+trap 'rm -rf "$build"' EXIT
+cmake -G Ninja -S "Software/Apps/$app-CMake" -B "$build" >/dev/null
+cmake --build "$build"
+[ -f "Output/$uapp" ] || { echo "Build did not produce Output/$uapp." >&2; exit 1; }
+
+tools="$UNA_SDK/Utilities/Scripts/app_packer"
+python "$tools/validate_app_config.py" --check "$manifest" \
+  --check-bounds Software/Libs/Header/service/AppConfigFields.hpp
+python "$tools/min_kernel_version.py" --check "$manifest"
+
+python - "$manifest" "$version" "$uapp" <<'EOF'
+import json, sys
+m = json.load(open(sys.argv[1]))
+for key, want in (("appVersion", sys.argv[2]), ("binary", sys.argv[3]), ("icon", "icon.png")):
+    if m.get(key) != want:
+        sys.exit(f"{sys.argv[1]}: {key} is {m.get(key)!r}, expected {want!r}")
+EOF
+
+mkdir -p dist
+zip="dist/${app}_${version}.zip"
+python - "$zip" "Output/$uapp" Resources/icon_60x60.png "$manifest" <<'EOF'
+import sys, zipfile
+out, uapp, icon, manifest = sys.argv[1:]
+with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+    z.write(uapp, uapp.split("/")[-1])
+    z.write(icon, "icon.png")
+    z.write(manifest, "app-manifest.json")
+EOF
+echo "Created $zip"

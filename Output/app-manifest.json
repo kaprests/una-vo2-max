@@ -4,7 +4,7 @@
     "activity"
   ],
   "name": "VO2 Max",
-  "icon": "Resources/icon_60x60.png",
+  "icon": "icon.png",
   "binary": "VO2Max_0.1.0.uapp",
   "appVersion": "0.1.0",
   "minKernelVersion": "1.4.0",

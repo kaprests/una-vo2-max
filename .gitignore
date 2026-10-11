@@ -5,3 +5,4 @@ __pycache__/
 Output/*.uapp
 Output/*.map
 Software/Output/
+dist/
