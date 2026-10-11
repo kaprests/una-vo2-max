@@ -1,0 +1,39 @@
+{
+  "manifest_version": 1,
+  "type": [
+    "activity"
+  ],
+  "name": "VO2 Max",
+  "icon": "Resources/icon_60x60.png",
+  "binary": "VO2Max_0.1.0.uapp",
+  "appVersion": "0.1.0",
+  "minKernelVersion": "1.4.0",
+  "requiredHardware": [
+    "GPS",
+    "HR"
+  ],
+  "description": "Estimates VO2 max from heart rate and pace during a steady outdoor run.",
+  "id": "DDBF14BBA60D533F",
+  "supportsLaps": true,
+  "supportsDistance": true,
+  "supportsTrack": true,
+  "supportsHeartbeat": true,
+  "supportsElevation": true,
+  "supportsStep": false,
+  "supportsSpeed": "pace",
+  "customMeasures": [],
+  "configFile": "app_config.json",
+  "configFields": [
+    {
+      "id": "maxHr",
+      "type": "int",
+      "label": "Max heart rate",
+      "description": "Needed for the VO2 max estimate. Leave at 0 if unknown.",
+      "default": 0,
+      "min": 0,
+      "max": 230,
+      "unit": "bpm",
+      "validationMessage": "0 to 230 bpm."
+    }
+  ]
+}

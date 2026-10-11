@@ -9,6 +9,8 @@
 #include "Settings.hpp"
 #include "ActivitySummary.hpp"
 #include "Track.hpp"
+#include "AppConfigFields.hpp"
+#include "Vo2MaxEstimator.hpp"
 #include "SDK/Tools/FirmwareVersion.hpp"
 #include "SDK/Messages/SensorLayerMessages.hpp"
 #include "SDK/Messages/AccessoryMessages.hpp"
@@ -114,6 +116,11 @@ void Service::run()
     if (!mSettingsSerializer.load(mSettings)) {
         LOG_WARNING("Failed to load settings\n");
     }
+
+    const auto maxHr = SDK::AppConfig(mKernel, AppConfigFields::kFileName, AppConfigFields::kFields)
+                           .getInt(AppConfigFields::kMaxHr);
+    mMaxHrBpm = maxHr >= Vo2MaxEstimator::Config{}.minMaxHr ? static_cast<uint8_t>(maxHr) : 0;
+    LOG_INFO("Max HR: %u\n", mMaxHrBpm);
 
     // Get summary
     if (!mActivitySummarySerializer.load(mSummary)) {
@@ -743,7 +750,7 @@ void Service::sendInitialInfoToGui()
         }
     }
 
-    SDK::send_msg<CustomMessage::SettingsUpd>(mKernel, mSettings, mIsImperial, mTimeFormat12h, hrThresholds, CustomMessage::kHrThresholdsCount);
+    SDK::send_msg<CustomMessage::SettingsUpd>(mKernel, mSettings, mIsImperial, mTimeFormat12h, hrThresholds, CustomMessage::kHrThresholdsCount, mMaxHrBpm);
     SDK::send_msg<CustomMessage::Summary>(mKernel, &mSummary);
     SDK::send_msg<CustomMessage::Battery>(mKernel, static_cast<uint8_t>(mBatterySoc.get()));
 }

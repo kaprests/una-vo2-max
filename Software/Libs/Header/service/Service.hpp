@@ -61,6 +61,7 @@ private:
     Settings                  mSettings;
     bool                      mIsImperial = false;
     bool                      mTimeFormat12h = false;
+    uint8_t                   mMaxHrBpm = 0;
     SettingsSerializer        mSettingsSerializer;
     ActivitySummary           mSummary;
     ActivitySummarySerializer mActivitySummarySerializer;

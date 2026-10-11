@@ -52,6 +52,7 @@ namespace CustomMessage {
         bool    timeFormat12h;   // true = 12-hour clock, false = 24-hour
         uint8_t hrThresholds[kHrThresholdsCount];
         uint8_t hrThresholdsCount;
+        uint8_t maxHrBpm;  // 0 = not set
 
         SettingsUpd()
             : SDK::MessageBase(SETTINGS_UPDATE)
@@ -59,10 +60,12 @@ namespace CustomMessage {
             , timeFormat12h(false)
             , hrThresholds {}
             , hrThresholdsCount(0)
+            , maxHrBpm(0)
         {}
 
         explicit SettingsUpd(Settings settings, bool units, bool timeFormat12h,
-                         const uint8_t (&thresholds)[kHrThresholdsCount], uint8_t thresholdCount)
+                         const uint8_t (&thresholds)[kHrThresholdsCount], uint8_t thresholdCount,
+                         uint8_t maxHrBpm)
             : SettingsUpd()
         {
             this->settings          = settings;
@@ -70,6 +73,7 @@ namespace CustomMessage {
             this->timeFormat12h     = timeFormat12h;
             memcpy(this->hrThresholds, thresholds, sizeof(this->hrThresholds));
             this->hrThresholdsCount = thresholdCount;
+            this->maxHrBpm          = maxHrBpm;
         }
     };
 

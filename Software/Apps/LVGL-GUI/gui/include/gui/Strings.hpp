@@ -17,6 +17,7 @@ inline constexpr const char* kAppNameUc = "VO2 MAX";
 inline constexpr const char* kKm        = "km";
 inline constexpr const char* kMi        = "mi";
 inline constexpr const char* kNoValue   = "---";
+inline constexpr const char* kNoMaxHr   = "Set max HR";
 } // namespace Strings
 
 #endif // STRINGS_HPP

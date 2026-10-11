@@ -44,6 +44,8 @@ void MainScreen::build()
     mButtons   = std::make_unique<Widgets::Buttons>(mRoot);
     mTitle     = std::make_unique<Widgets::Title>(mRoot, Strings::kAppNameUc);
     mSensorRow = std::make_unique<Widgets::SensorStatusRow>(mRoot, 0, 52, 240, 24);
+    mMaxHrHint = Theme::label(mRoot, Theme::Font::Regular14, Strings::kNoMaxHr, 0, 197, 240,
+                              LV_TEXT_ALIGN_CENTER, Color::YELLOW);
 
     mButtons->set(Widgets::Buttons::NONE, Widgets::Buttons::NONE,
                   Widgets::Buttons::AMBER, Widgets::Buttons::WHITE);
@@ -56,6 +58,7 @@ void MainScreen::onShow()
     mModel.resetIdleTimer();
     onGpsFix(mModel.hasGpsFix());
     onAccessoryStatus(mModel.getAccessoryState(), "");
+    onSettings(mModel.getSettings());
 }
 
 void MainScreen::onHide()
@@ -119,4 +122,9 @@ void MainScreen::onGpsFix(bool acquired)
 void MainScreen::onAccessoryStatus(uint8_t state, const char* /*name*/)
 {
     mSensorRow->setHr(Widgets::SensorStatusRow::hrState(state));
+}
+
+void MainScreen::onSettings(const Settings& /*settings*/)
+{
+    Theme::setHidden(mMaxHrHint, mModel.getMaxHrBpm() != 0);
 }

@@ -82,6 +82,11 @@ bool Model::is12HourFormat() const
     return mTimeFormat12h;
 }
 
+uint8_t Model::getMaxHrBpm() const
+{
+    return mMaxHrBpm;
+}
+
 const uint8_t* Model::getHrThresholds() const
 {
     return mHrThresholds;
@@ -247,6 +252,7 @@ bool Model::customMessageHandler(SDK::MessageBase* message)
             mTimeFormat12h     = msg->timeFormat12h;
             memcpy(mHrThresholds, msg->hrThresholds, sizeof(mHrThresholds));
             mHrThresholdsCount = msg->hrThresholdsCount;
+            mMaxHrBpm          = msg->maxHrBpm;
             modelListener->onSettings(mSettings);
         } break;
 

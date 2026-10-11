@@ -30,6 +30,7 @@ public:
 
     // ModelListener
     void onIdleTimeout() override;
+    void onSettings(const Settings& settings) override;
     void onGpsFix(bool acquired) override;
     void onAccessoryStatus(uint8_t state, const char* name) override;
 
@@ -48,6 +49,7 @@ private:
     std::unique_ptr<Widgets::SensorStatusRow> mSensorRow;
     std::unique_ptr<Widgets::Buttons>         mButtons;
     std::unique_ptr<WheelMenu>                mMenu;
+    lv_obj_t*                                 mMaxHrHint = nullptr;
 };
 
 #endif // MAIN_SCREEN_HPP

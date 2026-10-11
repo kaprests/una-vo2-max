@@ -86,6 +86,7 @@ public:
     bool is12HourFormat() const;
     const uint8_t* getHrThresholds() const;
     uint8_t        getHrThresholdsCount() const;
+    uint8_t        getMaxHrBpm() const;
     const Settings& getSettings() const;
     void saveSettings(const Settings& sett);
 
@@ -144,6 +145,7 @@ private:
     bool mTimeFormat12h = false;
     uint8_t mHrThresholds[App::Config::kHrThresholdsCount] = {};
     uint8_t mHrThresholdsCount = App::Config::kHrThresholdsCount;
+    uint8_t mMaxHrBpm = 0;
     Settings mSettings {};
 
     // Kernel state
