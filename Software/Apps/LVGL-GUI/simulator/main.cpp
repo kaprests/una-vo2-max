@@ -29,6 +29,7 @@
 #include "SDK/Simulator/LVGL/LvglHost.hpp"
 
 #include "Service.hpp"
+#include "ScreenshotTour.hpp"
 
 #define LOG_MODULE_PRX      "main"
 #define LOG_MODULE_LEVEL    LOG_LEVEL_INFO
@@ -87,6 +88,7 @@ int main(int, char**)
     SDK::LVGL::Port& port = SDK::LVGL::Port::GetInstance();
     port.init();
     una_lvgl_app_init();
+    ScreenshotTour::startIfRequested();
 
     host.start();
     host.run();

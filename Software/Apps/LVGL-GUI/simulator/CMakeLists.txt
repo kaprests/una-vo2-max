@@ -51,6 +51,7 @@ endforeach()
 
 add_executable(VO2MaxSimulator
     main.cpp
+    ScreenshotTour.cpp
     ${GUI_APP_SOURCES}
     ${LIBS_SOURCES}
     ${UNA_SDK_SOURCES_SIMULATOR}

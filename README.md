@@ -48,6 +48,7 @@ mise run sim     # build + run the Linux simulator (keys 1-4 = L1 L2 R1 R2, 5 = 
 mise run sim --config simulator-configs/max-hr-190.json --summary simulator-configs/latest-vo2-high.json
 mise run assets  # regenerate LVGL fonts/images
 mise run icons   # regenerate the app icons
+mise run screenshots  # simulator screenshots -> screenshots/
 mise run test    # host unit tests (GoogleTest)
 mise run clean
 ```

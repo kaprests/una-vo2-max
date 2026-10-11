@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#MISE description="Capture simulator screenshots into screenshots/"
+#MISE depends=["sim-build"]
+#
+# Runs the simulator headless with ScreenshotTour, in a scratch file system so
+# Software/Output is left alone.
+set -euo pipefail
+
+app=$(sed -nE 's/^app = "([^"]+)".*/\1/p' mise.toml)
+bin="$PWD/Software/Apps/LVGL-GUI/simulator/build/bin/${app}Simulator"
+work="$PWD/Software/Apps/LVGL-GUI/simulator/build/screenshots"
+rm -rf "$work" screenshots
+mkdir -p "$work/raw"
+
+# shoot <tour> <app_config sample> [latest_vo2 sample]
+shoot() {
+  local root="$work/$1"
+  # The mock file system is ../../../../../Output from the working directory.
+  local cwd="$root/1/2/3/4/5"
+  mkdir -p "$cwd" "$root/Output/Activity"
+  cp "simulator-configs/$2.json" "$root/Output/app_config.json"
+  if [ -n "${3:-}" ]; then cp "simulator-configs/$3.json" "$root/Output/Activity/latest_vo2.json"; fi
+  (cd "$cwd" && SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+     VO2_SCREENSHOT_DIR="$work/raw" VO2_SCREENSHOT_TOUR="$1" \
+     timeout 120 "$bin" > "$root/log.txt" 2>&1) ||
+    { echo "Tour '$1' failed; see $root/log.txt" >&2; exit 1; }
+}
+
+shoot full max-hr-190 latest-vo2-high
+shoot no-max-hr no-max-hr
+python tools/screenshots.py "$work/raw" screenshots
