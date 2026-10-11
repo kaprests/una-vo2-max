@@ -78,6 +78,7 @@ public:
     // Date/Time
     void getDate(uint8_t& month, uint8_t& day, uint8_t& weekday) const;
     void getTime(uint8_t& h, uint8_t& m, uint8_t& s) const;
+    const std::tm& getLocalTime() const;
 
     // Power
     uint8_t getBatteryLevel() const;

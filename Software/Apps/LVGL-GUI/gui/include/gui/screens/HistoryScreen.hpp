@@ -2,7 +2,9 @@
  ******************************************************************************
  * @file    HistoryScreen.hpp
  * @brief   VO2 max history: the latest result, a trend chart and a paged
- *          list, browsed with L1/L2. R2 returns to the main menu.
+ *          list, browsed with L1/L2. On the trend page R1 cycles the view
+ *          (last 20 runs, 6 months, 1 year); the list follows it. R2 returns
+ *          to the main menu.
  ******************************************************************************
  */
 
@@ -14,7 +16,7 @@
 
 #include "gui/screens/Screen.hpp"
 #include "gui/widgets/Widgets.hpp"
-#include "Vo2History.hpp"
+#include "Vo2Trend.hpp"
 
 class HistoryScreen : public Screen
 {
@@ -31,29 +33,34 @@ protected:
 private:
     enum Page : uint8_t { PAGE_LATEST, PAGE_TREND, PAGE_LIST, PAGE_COUNT };
 
-    static constexpr uint8_t kRows = 5;
-    static constexpr auto    kCapacity = Vo2History::kCapacity;
+    static constexpr uint8_t kRows      = 5;
+    static constexpr auto    kMaxPoints = Vo2Trend::kMaxPoints;
 
     void buildTrend(lv_obj_t* f);
     void buildList(lv_obj_t* f);
-    void setTrend(const Vo2History& h);
+    void setView(Vo2Trend::View view);
+    void drawTrend();
     void fillList();
     void showPage(uint8_t page);
 
-    const Vo2History* mHistory = nullptr;
+    const Vo2History*   mHistory = nullptr;
+    Vo2Trend::View      mView    = Vo2Trend::View::RUNS;
+    Vo2Trend::Selection mSelection;
 
     lv_obj_t* mPages[PAGE_COUNT] = {};
-    std::unique_ptr<Widgets::Title> mTitles[PAGE_COUNT];
+    std::unique_ptr<Widgets::Title>   mTitles[PAGE_COUNT];
     std::unique_ptr<Widgets::Vo2Card> mLatest;
 
     // Trend
-    lv_obj_t* mChart     = nullptr;
-    lv_obj_t* mLine      = nullptr;
-    lv_obj_t* mMaxLabel  = nullptr;
-    lv_obj_t* mMinLabel  = nullptr;
-    lv_obj_t* mTrendNote = nullptr;
-    std::array<lv_obj_t*, kCapacity>          mDots{};
-    std::array<lv_point_precise_t, kCapacity> mPoints{};
+    lv_obj_t* mChart      = nullptr;
+    lv_obj_t* mLine       = nullptr;
+    lv_obj_t* mMaxLabel   = nullptr;
+    lv_obj_t* mMinLabel   = nullptr;
+    lv_obj_t* mFirstMonth = nullptr;
+    lv_obj_t* mLastMonth  = nullptr;
+    lv_obj_t* mTrendNote  = nullptr;
+    std::array<lv_obj_t*, kMaxPoints>          mDots{};
+    std::array<lv_point_precise_t, kMaxPoints> mPoints{};
 
     // List
     lv_obj_t* mRows[kRows][2] = {};   ///< date, value

@@ -67,3 +67,21 @@ TEST(Vo2HistorySerializer, SkipsInvalidEntries)
     EXPECT_EQ(loaded.entries[0].utc, 1);
     EXPECT_EQ(loaded.entries[1].utc, 4);
 }
+
+TEST(Vo2HistorySerializer, LoadsAFullHistory)
+{
+    KernelFixture fixture;
+    Vo2HistorySerializer serializer(fixture.kernel, kFile);
+
+    Vo2History saved;
+    for (std::size_t i = 0; i < Vo2History::kCapacity; ++i) {
+        saved.add(entry(static_cast<std::time_t>(1000 + i), 45.0f + i * 0.05f));
+    }
+    ASSERT_TRUE(serializer.save(saved));
+
+    Vo2History loaded;
+    ASSERT_TRUE(serializer.load(loaded));
+    ASSERT_EQ(loaded.count, Vo2History::kCapacity);
+    EXPECT_EQ(loaded.entries[0].utc, 1000);
+    EXPECT_EQ(loaded.latest().utc, static_cast<std::time_t>(1000 + Vo2History::kCapacity - 1));
+}

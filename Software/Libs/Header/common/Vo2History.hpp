@@ -16,7 +16,7 @@
 #include "Vo2Result.hpp"
 
 struct Vo2History {
-    static constexpr std::size_t kCapacity = 20;
+    static constexpr std::size_t kCapacity = 160;   ///< About a year at 3 runs a week.
 
     struct Entry {
         std::time_t utc = 0;

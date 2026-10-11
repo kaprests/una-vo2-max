@@ -23,6 +23,9 @@ bool Vo2Json::read(const SDK::JsonStreamReader& reader, const char* path, Vo2Res
 {
     char key[48];
     const auto get = [&](const char* field, auto& out) {
+        if (!path) {
+            return reader.get(field, out);
+        }
         std::snprintf(key, sizeof(key), "%s.%s", path, field);
         return reader.get(key, out);
     };

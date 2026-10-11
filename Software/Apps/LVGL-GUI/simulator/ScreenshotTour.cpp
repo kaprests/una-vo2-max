@@ -33,6 +33,9 @@ constexpr Step kFull[] = {
     {Btn::L2, 1000, "02-main-history"},
     {Btn::R1, 1000, "03-history-latest"},
     {Btn::L2, 1000, "10-history-trend"},
+    {Btn::R1, 1000, "12-history-6m"},
+    {Btn::R1, 1000, "13-history-1y"},
+    {Btn::R1, 1000, nullptr},               // back to the last 20 runs
     {Btn::L2, 1000, "11-history-list"},
     {Btn::R2, 1000, nullptr},
     {Btn::L2, 1000, nullptr},

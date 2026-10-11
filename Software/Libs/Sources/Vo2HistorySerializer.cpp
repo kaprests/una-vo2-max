@@ -76,18 +76,22 @@ bool Vo2HistorySerializer::load(Vo2History& history)
         return false;
     }
 
+    // Each entry is read through a reader over its own object: a query on the
+    // whole file searches from the start, which is quadratic over 160 entries.
     history = {};
     for (unsigned i = 0; i < Vo2History::kCapacity; ++i) {
         char path[16];
-        char key[24];
         std::snprintf(path, sizeof(path), "entries[%u]", i);
-        std::snprintf(key, sizeof(key), "%s.utc", path);
-        uint32_t utc = 0;
-        if (!reader.get(key, utc)) {
+        const char* object = nullptr;
+        std::size_t len    = 0;
+        if (!reader.get(path, object, len)) {
             break;
         }
-        Vo2History::Entry e{static_cast<std::time_t>(utc), {}};
-        if (Vo2Json::read(reader, path, e.result) && e.result.valid()) {
+        const SDK::JsonStreamReader entry(object, len);
+        uint32_t          utc = 0;
+        Vo2History::Entry e;
+        if (entry.get("utc", utc) && Vo2Json::read(entry, e.result) && e.result.valid()) {
+            e.utc = static_cast<std::time_t>(utc);
             history.add(e);
         }
     }

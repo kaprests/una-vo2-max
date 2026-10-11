@@ -21,6 +21,7 @@ add_executable(vo2max-host-tests
     ActivitySummarySerializer_test.cpp
     SettingsSerializer_test.cpp
     Vo2History_test.cpp
+    Vo2Trend_test.cpp
     ${LIBS}/Sources/Vo2MaxEstimator.cpp
     ${LIBS}/Sources/ActivitySummarySerializer.cpp
     ${LIBS}/Sources/SettingsSerializer.cpp

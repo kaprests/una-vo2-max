@@ -51,6 +51,11 @@ void Model::exitApp()
 }
 
 // Date/Time
+const std::tm& Model::getLocalTime() const
+{
+    return mTime;
+}
+
 void Model::getDate(uint8_t& month, uint8_t& day, uint8_t& weekday) const
 {
     month   = static_cast<uint8_t>(mTime.tm_mon);
