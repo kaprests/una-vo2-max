@@ -4,3 +4,4 @@ build/
 __pycache__/
 Output/*.uapp
 Output/*.map
+Software/Output/

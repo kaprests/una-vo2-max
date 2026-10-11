@@ -18,7 +18,7 @@ mise doctor      # optional health check
 mise bootstrap packages status   # which OS packages are missing
 mise bootstrap packages apply    # install only the OS packages (asks for sudo)
 mise bootstrap repos apply       # clone una-sdk at the pinned tag
-mise install                     # ARM toolchain, cmake, uv
+mise install                     # ARM toolchain, cmake, ninja, node, uv
 mise run bootstrap               # LVGL submodule + uv sync
 ```
 
@@ -30,20 +30,21 @@ To install strictly this project's packages, hide the global config:
 
 ## New app (run once for a new project)
 
-Scaffold a new app from any TouchGFX example or tutorial in the SDK
+Scaffold a new app from an **LVGL** example or tutorial in the SDK (TouchGFX is not supported)
 ([docs](https://www.developers.unawatch.com/latest/sdk-setup.html#creating-new-apps)):
 
 ```sh
-mise run new-app MyApp --from una-sdk/Examples/Apps/Alarm
+mise run new-app MyApp --from una-sdk/Examples/Apps/RunLVGL
 ```
 
 ## Build and simulate
 
 ```sh
 mise run build   # .uapp -> Output/
-mise run sim     # build + run the Linux simulator (keys 1-4 = L1 L2 R1 R2, 5 = wrist)
+mise run sim     # build + run the Linux simulator (keys 1-4 = L1 L2 R1 R2, 5 = wrist, Esc = quit)
+mise run assets  # regenerate LVGL fonts/images
 mise run clean
 ```
 
 - Firmware build: https://www.developers.unawatch.com/latest/sdk-setup.html
-- Linux simulator: https://www.developers.unawatch.com/latest/Simulator.html#linux-gcc
+- Linux simulator: https://www.developers.unawatch.com/latest/Tutorials/RunLVGL/ARCHITECTURE.html

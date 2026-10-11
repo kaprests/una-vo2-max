@@ -1,30 +1,31 @@
 #!/usr/bin/env bash
-#MISE description="Scaffold the app from an SDK example (run once)"
-#USAGE arg "<name>" help="New app name, e.g. PerformanceStats"
-#USAGE flag "--from <path>" required=#true help="Example app dir, e.g. una-sdk/Examples/Apps/Alarm"
+#MISE description="Scaffold the app from an SDK LVGL example (run once)"
+#USAGE arg "<name>" help="New app name, e.g. MyApp"
+#USAGE flag "--from <path>" required=#true help="LVGL example dir, e.g. una-sdk/Examples/Apps/RunLVGL"
 #
+# LVGL apps only (TouchGFX needs the Windows-only Designer).
 # Automates "Creating New Apps" -> "Full Rename and Reorganization":
 # https://www.developers.unawatch.com/latest/sdk-setup.html#creating-new-apps
+# LVGL layout: https://www.developers.unawatch.com/latest/Tutorials/RunLVGL/ARCHITECTURE.html
 set -euo pipefail
 
 name="$usage_name"
 src="${usage_from%/}"
-from="$(basename "$src")"
 apps="$src/Software/Apps"
 
 [ -e Software ] && { echo "Software/ already exists; app is already scaffolded." >&2; exit 1; }
-[ -d "$apps/$from-CMake" ] && [ -d "$apps/TouchGFX-GUI" ] ||
-  { echo "Expected $apps/$from-CMake and $apps/TouchGFX-GUI (TouchGFX examples only)." >&2; exit 1; }
+[ -d "$apps/LVGL-GUI" ] || { echo "No $apps/LVGL-GUI: only LVGL examples are supported." >&2; exit 1; }
+cmake_dir=$(grep -l 'LVGL-GUI' "$apps"/*-CMake/CMakeLists.txt | xargs dirname)
+[ "$(echo "$cmake_dir" | wc -l)" = 1 ] || { echo "Expected one LVGL *-CMake dir in $apps." >&2; exit 1; }
+from=$(basename "$cmake_dir" -CMake)
 
-# 1. Copy CMake template, libs, TouchGFX and icons
-mkdir -p "Software/Apps/$name-CMake" Software/Libs Software/Apps/TouchGFX-GUI Resources Output
-cp -r "$apps/$from-CMake/." "Software/Apps/$name-CMake/"
-cp -r "$src/Software/Libs/." Software/Libs/
-cp -r "$apps/TouchGFX-GUI/." Software/Apps/TouchGFX-GUI/
-cp -r "$src/Resources/." Resources/
-[ -f "Software/Apps/$name-CMake/${from}Service.ld" ] &&
-  mv "Software/Apps/$name-CMake/${from}Service.ld" "Software/Apps/$name-CMake/${name}Service.ld"
-for f in Software/Apps/TouchGFX-GUI/*.touchgfx; do mv "$f" "Software/Apps/TouchGFX-GUI/${name}GUI.touchgfx"; done
+# 1. Copy CMake project, libs, GUI and icons
+mkdir -p Software/Apps Output
+cp -r "$cmake_dir" "Software/Apps/$name-CMake"
+cp -r "$src/Software/Libs" Software/Libs
+cp -r "$apps/LVGL-GUI" Software/Apps/LVGL-GUI
+cp -r "$src/Resources" Resources
+rm -rf "Software/Apps/$name-CMake/build" Software/Apps/LVGL-GUI/simulator/build
 
 # 2. Customize CMakeLists.txt
 app_id=$(python3 -c "import hashlib,sys; print(hashlib.md5(sys.argv[1].encode()).hexdigest().upper()[:16])" "$name")
@@ -33,12 +34,13 @@ sed -i -E \
   -e "s/^set\(APP_USER_NAME .*/set(APP_USER_NAME \"$name\")/" \
   -e "s/^set\(APP_FILE_NAME .*/set(APP_FILE_NAME \"$name\")/" \
   -e "s/^set\(APP_ID .*/set(APP_ID \"$app_id\")/" \
+  -e "s|^set\(OUTPUT_PATH .*|set(OUTPUT_PATH \"\${CMAKE_CURRENT_SOURCE_DIR}/../../../Output\")|" \
   "Software/Apps/$name-CMake/CMakeLists.txt"
 
-# Point TouchGFX at the SDK (see Simulator docs, "Transfer Application")
-tgfx="../../../una-sdk/ThirdParty/touchgfx"
-sed -i -E "s|^touchgfx_path := .*|touchgfx_path := $tgfx|" Software/Apps/TouchGFX-GUI/config/gcc/app.mk
-sed -i -E "s|\"TouchGfxPath\": \"[^\"]*\"|\"TouchGfxPath\": \"$tgfx\"|" Software/Apps/TouchGFX-GUI/*.touchgfx
+# Simulator target and asset script (it locates the SDK by relative path)
+sed -i "s/${from}Simulator/${name}Simulator/g" Software/Apps/LVGL-GUI/simulator/CMakeLists.txt
+gen=Software/Apps/LVGL-GUI/assets/gen_assets.py
+[ -f "$gen" ] && sed -i -E 's|^SDK_ROOT = .*|SDK_ROOT = os.environ["UNA_SDK"]|' "$gen"
 
 sed -i -E "s/^app = .*/app = \"$name\"/" mise.toml
 echo "Created $name (APP_ID $app_id) from $src. Next: mise run build && mise run sim"

@@ -3,10 +3,13 @@ name = "vo2-max-estimator"
 version = "0.1.0"
 description = "UNA Watch app for estimating VO2 max"
 requires-python = ">=3.12,<3.13"
-# Mirrors una-sdk/Utilities/Scripts/app_packer/requirements.txt
+# pyelftools, Pillow: una-sdk/Utilities/Scripts/app_packer/requirements.txt
+# pypng, lz4: LVGL image conversion (mise run assets)
 dependencies = [
     "pyelftools>=0.29",
     "Pillow>=9.0.0",
+    "pypng",
+    "lz4",
 ]
 
 [tool.uv]
