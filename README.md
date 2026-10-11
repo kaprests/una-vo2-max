@@ -1,4 +1,4 @@
-# Performance Stats App
+# VO2 max estimator
 
 ## Setup
 

@@ -1,7 +1,7 @@
 [project]
-name = "performance-stats-app"
+name = "VO2-max-estimator"
 version = "0.1.0"
-description = "UNA Watch app"
+description = "UNA Watch app for estimating VO2 max"
 requires-python = ">=3.12,<3.13"
 # Mirrors una-sdk/Utilities/Scripts/app_packer/requirements.txt
 dependencies = [
