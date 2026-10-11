@@ -1,25 +1,22 @@
-# Dev environment for UNA Watch apps. See README.md.
-# SDK docs: https://www.developers.unawatch.com/latest/sdk-setup.html
-
 [vars]
-app = ""   # set by `mise run new-app`
+app = "" # set by `mise run new-app`
 
 [tools]
 uv = "latest"
 cmake = "4.4"
-# Arm GNU Toolchain (upstream of ST's "GNU Tools for STM32"; no ST account needed).
-# SDK CI (una-sdk/.github/workflows/apps-ci.yml) builds in xanderhendriks/stm32cubeide:16.0,
-# which is STM32CubeIDE 1.19.0 -> GNU Tools for STM32 13.3.rel1 (per ST release notes, unverified).
-# Recheck apps-ci.yml when bumping the SDK tag below.
+# Arm GNU Toolchain (upstream of ST's "GNU Tools for STM32". No ST account needed).
+# The SDK CI (una-sdk/.github/workflows/apps-ci.yml) builds in xanderhendriks/stm32cubeide:16.0,
+# which is STM32CubeIDE 1.19.0 -> GNU Tools for STM32 13.3.rel1 (per ST release notes).
+# Recheck apps-ci.yml for an update version when bumping the SDK tag below.
 gcc-arm-none-eabi = "13.3.Rel1"
 
 [env]
 UNA_SDK = "{{config_root}}/una-sdk"
-# Activate the uv-managed venv (uv owns Python + the venv; mise only puts it on PATH).
 _.python.venv = { path = ".venv" }
 
 # Host packages for the Linux (GCC + SDL2) simulator. Not needed for firmware builds.
 [bootstrap.packages]
+# Pacman:
 "pacman:base-devel" = "latest"
 "pacman:git" = "latest"
 "pacman:sdl2-compat" = "latest"
@@ -27,8 +24,9 @@ _.python.venv = { path = ".venv" }
 "pacman:libjpeg-turbo" = "latest"
 "pacman:ruby" = "latest"
 "pacman:ruby-nokogiri" = "latest"
-"pacman:ruby-erb" = "latest"   # Arch splits erb out of ruby; TouchGFX textconvert needs it
+"pacman:ruby-erb" = "latest" # Arch splits erb out of ruby, needed by TouchGFX textconvert
 "pacman:gdb" = "latest"
+# Apt:
 "apt:build-essential" = "latest"
 "apt:git" = "latest"
 "apt:libsdl2-dev" = "latest"
@@ -41,7 +39,7 @@ _.python.venv = { path = ".venv" }
 [bootstrap.repos]
 "una-sdk" = { url = "https://github.com/UNAWatch/una-sdk.git", ref = "sdk-v1.5.0" }
 
-# Runs last in `mise bootstrap`, after the SDK is cloned and tools are installed.
+# Runs last in `mise bootstrap` after the SDK is cloned and tools are installed.
 [tasks.bootstrap]
 run = [
   "git -C una-sdk submodule update --init ThirdParty/lvgl",

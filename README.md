@@ -1,4 +1,4 @@
-# Performance Stats App (UNA Watch)
+# Performance Stats App
 
 ## Setup
 
@@ -10,7 +10,7 @@ mise bootstrap   # OS packages, una-sdk clone, tools, LVGL submodule + Python ve
 mise doctor      # optional health check
 ```
 
-`UNA_SDK`, the ARM toolchain and the venv are set automatically inside this directory.
+`UNA_SDK`, the ARM toolchain and the venv are automatically set inside this directory.
 
 ### Individual steps
 
@@ -23,14 +23,14 @@ mise run bootstrap               # LVGL submodule + uv sync
 ```
 
 `mise bootstrap` also applies any `[bootstrap]` sections in your global mise config.
-To apply only this project's parts: `mise bootstrap --only packages,repos,tools,task`.
-Package declarations always merge with the global config; to install strictly this
-project's packages, hide it:
+To apply only this project's parts use: `mise bootstrap --only packages,repos,tools,task`.
+Package declarations always merge with the global config.
+To install strictly this project's packages, hide the global config:
 `MISE_GLOBAL_CONFIG_FILE=$(mktemp --suffix .toml) mise bootstrap packages apply`.
 
-## New app (once)
+## New app (run once for a new project)
 
-Scaffold from any TouchGFX example or tutorial in the SDK
+Scaffold a new app from any TouchGFX example or tutorial in the SDK
 ([docs](https://www.developers.unawatch.com/latest/sdk-setup.html#creating-new-apps)):
 
 ```sh
