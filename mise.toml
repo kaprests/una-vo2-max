@@ -61,6 +61,15 @@ description = "Regenerate LVGL fonts and images"
 dir = "Software/Apps/LVGL-GUI/assets"
 run = "python gen_assets.py"
 
+[tasks.test]
+description = "Build and run the host unit tests (Docs/unit-testing.md)"
+dir = "Software/Tests"
+run = [
+  "cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Debug",
+  "cmake --build build",
+  "ctest --test-dir build --output-on-failure",
+]
+
 [tasks.clean]
 description = "Remove build output"
-run = "rm -rf Software/Apps/{{vars.app}}-CMake/build Software/Apps/LVGL-GUI/simulator/build"
+run = "rm -rf Software/Apps/{{vars.app}}-CMake/build Software/Apps/LVGL-GUI/simulator/build Software/Tests/build"

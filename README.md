@@ -46,6 +46,7 @@ title, comments) for you to review/edit by hand.
 mise run build   # .uapp -> Output/
 mise run sim     # build + run the Linux simulator (keys 1-4 = L1 L2 R1 R2, 5 = wrist, Esc = quit)
 mise run assets  # regenerate LVGL fonts/images
+mise run test    # host unit tests (GoogleTest)
 mise run clean
 ```
 
