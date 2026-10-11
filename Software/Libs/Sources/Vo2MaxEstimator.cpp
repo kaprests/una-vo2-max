@@ -9,18 +9,29 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace
 {
-constexpr float kMinVo2 = 20.0f;  // ml/kg/min; outside this the fit is wrong
+constexpr float kMinVo2 = 20.0f; // ml/kg/min
 constexpr float kMaxVo2 = 90.0f;
 
-// ACSM running equation, horizontal component plus resting 3.5.
-float acsmVo2(float speedMs)
+/// ACSM running equation: 3.5 + 0.2 * speed in m/min.
+float acsmVo2(float speedMps)
 {
-    return 3.5f + 0.2f * speedMs * 60.0f;
+    return 3.5f + 0.2f * speedMps * 60.0f;
 }
 } // namespace
+
+void Vo2MaxEstimator::LinearFit::add(double x, double y)
+{
+    const auto fy = static_cast<float>(y);
+    yMin = n ? std::min(yMin, fy) : fy;
+    yMax = n ? std::max(yMax, fy) : fy;
+    ++n;
+    sx += x;  sy += y;
+    sxx += x * x;  sxy += x * y;  syy += y * y;
+}
 
 Vo2MaxEstimator::Vo2MaxEstimator()
     : Vo2MaxEstimator(Config{})
@@ -34,146 +45,106 @@ Vo2MaxEstimator::Vo2MaxEstimator(const Config& config)
 
 void Vo2MaxEstimator::reset()
 {
-    breakStretch();
-    mN = 0;
-    mSx = mSy = mSxx = mSxy = mSyy = 0;
-    mHrMin = mHrMax = 0.0f;
+    *this = Vo2MaxEstimator(mConfig);
 }
 
 void Vo2MaxEstimator::breakStretch()
 {
     mWindowCount = 0;
     mWindowHead  = 0;
-    mSteadyRun   = 0;
+    mSteadySec   = 0;
 }
 
-bool Vo2MaxEstimator::isUsable(const Sample& s) const
+bool Vo2MaxEstimator::usable(const Sample& s) const
 {
-    if (s.speedMs < mConfig.minSpeedMs || s.speedMs > mConfig.maxSpeedMs) {
-        return false;
+    const Config& c = mConfig;
+    return s.speedMps >= c.minSpeedMps && s.speedMps <= c.maxSpeedMps
+        && s.hrBpm >= c.minHrBpm
+        && s.hrTrust >= c.minHrTrust && s.hrTrust <= kMaxHrTrust
+        && (!s.gradeValid || std::fabs(s.gradePct) <= c.maxGradePct);
+}
+
+/// Steady: the window's halves agree, and the newest speed is near the mean
+/// (catches a pace change on its first second).
+bool Vo2MaxEstimator::windowSteady(float newest) const
+{
+    constexpr std::size_t half = kWindowSec / 2;
+    float older = 0.0f, newer = 0.0f;
+    for (std::size_t i = 0; i < kWindowSec; ++i) {
+        (i < half ? older : newer) += mWindow[(mWindowHead + i) % kWindowSec];
     }
-    if (s.hrBpm < mConfig.minHrBpm || s.hrTrust < mConfig.minHrTrust || s.hrTrust > 3) {
-        return false;
-    }
-    if (s.gradeValid) {
-        if (std::fabs(s.gradePct) > mConfig.maxGradePct) {
-            return false;
-        }
-    } else if (mConfig.requireGrade) {
-        return false;
-    }
-    return true;
+    const float mean = (older + newer) / kWindowSec;
+    return std::fabs(newer / (kWindowSec - half) - older / half) <= mConfig.steadyDriftMps
+        && std::fabs(newest - mean) <= mConfig.steadyJumpMps;
 }
 
 void Vo2MaxEstimator::addSample(const Sample& s)
 {
-    if (!isUsable(s)) {
+    if (!usable(s)) {
         breakStretch();
         return;
     }
 
-    mWindow[mWindowHead] = s.speedMs;
-    mWindowHead = (mWindowHead + 1) % kWindowSec;
-    if (mWindowCount < kWindowSec) {
-        ++mWindowCount;
-    }
+    mWindow[mWindowHead] = s.speedMps;
+    mWindowHead  = (mWindowHead + 1) % kWindowSec;
+    mWindowCount = std::min(mWindowCount + 1, kWindowSec);
     if (mWindowCount < kWindowSec) {
         return;
     }
 
-    // Oldest-to-newest order starts at mWindowHead (the buffer is full).
-    constexpr std::size_t half = kWindowSec / 2;
-    float older = 0.0f, newer = 0.0f;
-    for (std::size_t i = 0; i < kWindowSec; ++i) {
-        const float v = mWindow[(mWindowHead + i) % kWindowSec];
-        (i < half ? older : newer) += v;
-    }
-    const float mean = (older + newer) / kWindowSec;
-    older /= half;
-    newer /= kWindowSec - half;
-    if (std::fabs(newer - older) > mConfig.steadyDriftMs ||
-        std::fabs(s.speedMs - mean) > mConfig.steadyJumpMs) {
-        mSteadyRun = 0;
-        return;
-    }
-    if (mSteadyRun < mConfig.settleSec) {
-        ++mSteadyRun;
-        return;
-    }
-
-    const double x = s.speedMs;
-    const double y = s.hrBpm;
-    if (mN == 0) {
-        mHrMin = mHrMax = s.hrBpm;
+    if (!windowSteady(s.speedMps)) {
+        mSteadySec = 0;
+    } else if (mSteadySec < mConfig.settleSec) {
+        ++mSteadySec;
     } else {
-        mHrMin = std::min(mHrMin, s.hrBpm);
-        mHrMax = std::max(mHrMax, s.hrBpm);
+        mFit.add(s.speedMps, s.hrBpm);
     }
-    ++mN;
-    mSx += x;  mSy += y;
-    mSxx += x * x;  mSxy += x * y;  mSyy += y * y;
 }
 
 Vo2MaxEstimator::Result Vo2MaxEstimator::result(float maxHrBpm) const
 {
     Result r;
-    r.steadySec = static_cast<uint16_t>(std::min<uint32_t>(mN, UINT16_MAX));
-    r.hrMin     = mHrMin;
-    r.hrMax     = mHrMax;
+    r.steadySec = static_cast<uint16_t>(std::min<uint32_t>(mFit.n, std::numeric_limits<uint16_t>::max()));
+    r.hrMin     = mFit.yMin;
+    r.hrMax     = mFit.yMax;
+
+    const auto fail = [&r](Reason reason) { r.reason = reason; return r; };
 
     if (maxHrBpm < mConfig.minMaxHr) {
-        r.reason = Reason::NO_MAX_HR;
-        return r;
+        return fail(Reason::NO_MAX_HR);
     }
-    r.hrRangeFrac = (mHrMax - mHrMin) / maxHrBpm;
+    r.hrRangeFrac = (r.hrMax - r.hrMin) / maxHrBpm;
 
-    if (mN < mConfig.minSteadySec || mN < 2) {
-        r.reason = Reason::TOO_SHORT;
-        return r;
-    }
-    if (r.hrRangeFrac < mConfig.minHrRangeFrac) {
-        r.reason = Reason::LOW_HR_RANGE;
-        return r;
-    }
+    const auto meets = [&r](const Config::Level& l) {
+        return r.steadySec >= l.steadySec && r.hrRangeFrac >= l.hrRangeFrac && r.r2 >= l.r2;
+    };
 
-    const double n   = mN;
-    const double sxx = mSxx - mSx * mSx / n;
-    const double sxy = mSxy - mSx * mSy / n;
-    const double syy = mSyy - mSy * mSy / n;
-    if (sxx <= 0.0 || syy <= 0.0) {
-        r.reason = Reason::LOW_HR_RANGE;
-        return r;
+    if (mFit.n < std::max<uint32_t>(mConfig.minimum.steadySec, 2)) {
+        return fail(Reason::TOO_SHORT);
     }
-    const double slope     = sxy / sxx;
-    const double intercept = (mSy - slope * mSx) / n;
-    r.slope = static_cast<float>(slope);
-    r.r2    = static_cast<float>((sxy * sxy) / (sxx * syy));
-
-    if (slope <= 0.0) {
-        r.reason = Reason::BAD_SLOPE;
-        return r;
-    }
-    if (r.r2 < mConfig.minR2) {
-        r.reason = Reason::POOR_FIT;
-        return r;
+    if (r.hrRangeFrac < mConfig.minimum.hrRangeFrac || mFit.varX() <= 0.0 || mFit.varY() <= 0.0) {
+        return fail(Reason::LOW_HR_RANGE);
     }
 
-    r.vMaxMs = static_cast<float>((maxHrBpm - intercept) / slope);
-    const float vo2 = acsmVo2(r.vMaxMs);
+    r.slope = static_cast<float>(mFit.slope());
+    r.r2    = static_cast<float>(mFit.r2());
+    if (r.slope <= 0.0f) {
+        return fail(Reason::BAD_SLOPE);
+    }
+    if (r.r2 < mConfig.minimum.r2) {
+        return fail(Reason::POOR_FIT);
+    }
+
+    r.vMaxMps = static_cast<float>((maxHrBpm - mFit.intercept()) / mFit.slope());
+    const float vo2 = acsmVo2(r.vMaxMps);
     if (vo2 < kMinVo2 || vo2 > kMaxVo2) {
-        r.reason = Reason::OUT_OF_RANGE;
-        return r;
+        return fail(Reason::OUT_OF_RANGE);
     }
-    r.vo2max = vo2;
-    r.reason = Reason::OK;
 
-    const Config& c = mConfig;
-    if (r.steadySec >= c.highSteadySec && r.hrRangeFrac >= c.highHrRangeFrac && r.r2 >= c.highR2) {
-        r.confidence = Confidence::HIGH;
-    } else if (r.steadySec >= c.mediumSteadySec && r.hrRangeFrac >= c.mediumHrRangeFrac && r.r2 >= c.mediumR2) {
-        r.confidence = Confidence::MEDIUM;
-    } else {
-        r.confidence = Confidence::LOW;
-    }
+    r.vo2max     = vo2;
+    r.reason     = Reason::OK;
+    r.confidence = meets(mConfig.high)   ? Confidence::HIGH
+                 : meets(mConfig.medium) ? Confidence::MEDIUM
+                                         : Confidence::LOW;
     return r;
 }
