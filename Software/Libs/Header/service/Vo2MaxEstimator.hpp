@@ -37,6 +37,7 @@ public:
         float    steadyDriftMps= 0.25f;  ///< Max change between window halves.
         float    steadyJumpMps = 0.5f;   ///< Max newest speed off window mean.
         uint16_t settleSec     = 60;     ///< HR lag after a pace change.
+        uint8_t  maxGapSec     = 5;      ///< Unusable seconds skipped before a stretch breaks.
         float    minMaxHr      = 120.0f; ///< Lower max HR counts as not set.
 
         Level minimum{ 300, 0.10f, 0.30f};
@@ -113,6 +114,7 @@ private:
     std::size_t mWindowCount = 0;
     std::size_t mWindowHead  = 0;            ///< Oldest entry once full.
     uint16_t    mSteadySec   = 0;
+    uint8_t     mGapSec      = 0;
 
     LinearFit mFit; ///< x = speed, y = HR
 };

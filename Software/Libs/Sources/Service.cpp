@@ -930,7 +930,7 @@ void Service::processTrack()
         }
 
         mVo2Estimator.addSample({mHrCounter.getCurrent(), static_cast<uint8_t>(mTrackData.hrTrustLevel),
-                                 mGpsSpeedValid ? mGpsSpeedMs : 0.0f,
+                                 mGpsSpeedValid ? mTrackData.speed : 0.0f,
                                  mGradeData.gradePct, mGradeData.gradeValid});
 
         // Save record to the FIT file

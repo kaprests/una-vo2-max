@@ -53,6 +53,7 @@ void Vo2MaxEstimator::breakStretch()
     mWindowCount = 0;
     mWindowHead  = 0;
     mSteadySec   = 0;
+    mGapSec      = 0;
 }
 
 bool Vo2MaxEstimator::usable(const Sample& s) const
@@ -81,9 +82,12 @@ bool Vo2MaxEstimator::windowSteady(float newest) const
 void Vo2MaxEstimator::addSample(const Sample& s)
 {
     if (!usable(s)) {
-        breakStretch();
+        if (++mGapSec > mConfig.maxGapSec) {
+            breakStretch();
+        }
         return;
     }
+    mGapSec = 0;
 
     mWindow[mWindowHead] = s.speedMps;
     mWindowHead  = (mWindowHead + 1) % kWindowSec;

@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <deque>
+#include <numeric>
 #include <random>
 #include <vector>
 
@@ -75,13 +77,20 @@ TEST(Vo2MaxEstimator, PaceChangeWaitsForSettle)
 
 TEST(Vo2MaxEstimator, NoisyDataStillEstimates)
 {
+    // GPS speed noise as the Service delivers it: smoothed over 10 s.
     Est est;
     std::mt19937 rng(42);
     std::normal_distribution<float> hrNoise(0.0f, 5.0f);
-    std::normal_distribution<float> speedNoise(0.0f, 0.08f);
+    std::normal_distribution<float> gpsNoise(0.0f, 0.3f);
+    std::deque<float> window;
     for (float v : kPaces) {
         for (int i = 0; i < 600; ++i) {
-            est.addSample(sample(v + speedNoise(rng), kA + kB * v + hrNoise(rng)));
+            window.push_back(v + gpsNoise(rng));
+            if (window.size() > 10) {
+                window.pop_front();
+            }
+            const float smoothed = std::accumulate(window.begin(), window.end(), 0.0f) / window.size();
+            est.addSample(sample(smoothed, kA + kB * v + hrNoise(rng)));
         }
     }
 
@@ -144,6 +153,28 @@ TEST(Vo2MaxEstimator, UntrustedHrIsIgnored)
         est.addSample(s);
     }
     EXPECT_EQ(est.result(kMaxHr).steadySec, 0);
+}
+
+TEST(Vo2MaxEstimator, ShortGapKeepsStretch)
+{
+    Est est;
+    runPaces(est, {3.0f}, 400);
+    for (int i = 0; i < Est::Config{}.maxGapSec; ++i) {
+        est.addSample(sample(0.0f, 0.0f));
+    }
+    runPaces(est, {3.0f}, 100);
+    EXPECT_EQ(est.result(kMaxHr).steadySec, 500 - kLeadIn);
+}
+
+TEST(Vo2MaxEstimator, LongGapBreaksStretch)
+{
+    Est est;
+    runPaces(est, {3.0f}, 400);
+    for (int i = 0; i <= Est::Config{}.maxGapSec; ++i) {
+        est.addSample(sample(0.0f, 0.0f));
+    }
+    runPaces(est, {3.0f}, 100);
+    EXPECT_EQ(est.result(kMaxHr).steadySec, 400 - kLeadIn + 100 - kLeadIn);
 }
 
 TEST(Vo2MaxEstimator, HrFallingWithSpeedIsRejected)
