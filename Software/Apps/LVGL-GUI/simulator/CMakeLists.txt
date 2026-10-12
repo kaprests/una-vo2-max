@@ -72,7 +72,7 @@ target_include_directories(VO2MaxSimulator PRIVATE
 target_compile_definitions(VO2MaxSimulator PRIVATE
     ${UNA_SDK_DEFINES_SIMULATOR}
     ${UNA_SDK_DEFINES_GUI_LVGL}
-    APP_ID="DDBF14BBA60D533F"
+    APP_ID="E3FF7265E4DF8E81"
     DEV_ID="UNA Simulator"
     BUILD_VERSION="1.0.0-sim"
 )
