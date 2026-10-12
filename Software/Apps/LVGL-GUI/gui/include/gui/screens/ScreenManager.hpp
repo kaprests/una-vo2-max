@@ -29,6 +29,8 @@ enum class ScreenId : uint8_t {
     MenuAlertTime,
     MenuAlertDistanceSaved,
     MenuAlertTimeSaved,
+    CalibrationResetDone,
+    CalibrationResetNone,
     // Activity
     TrackStartConfirm,
     Track,

@@ -60,7 +60,7 @@ struct Root {
 
     struct Settings {
         enum Id {
-            ID_ALERTS = 0, ID_SHOW_GUIDE,
+            ID_ALERTS = 0, ID_SHOW_GUIDE, ID_RESET_CALIBRATION,
             ID_COUNT, ID_DEFAULT = ID_ALERTS
         };
 

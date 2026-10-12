@@ -39,7 +39,13 @@ The parameter is one of two options (set at build time):
 - **Factor** (default): scales the estimate. calibrated = factor · raw.
 - **Running cost:** replaces 0.2 in the ACSM equation, i.e. your personal oxygen cost per metre (allowed range 0.16–0.25).
 
-History stores raw estimates; calibration is applied when shown. Adding or editing a lab result therefore updates all past values.
+History stores raw estimates, and calibration is applied when shown. Adding or editing a lab result therefore updates all past values.
+
+To start over from a "clean slate", use **Reset calibration** in Settings.
+This is something one may want to do e.g. after a large correction of max heart rate. 
+Earlier lab results stay visible (grey) but no longer count towards the calibration factor.
+Results are in this case uncalibrated until you add a new lab test.
+Re-entering old lab results counts as adding a new test.
 
 ## Related work
 

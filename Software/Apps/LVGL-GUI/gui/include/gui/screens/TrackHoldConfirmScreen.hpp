@@ -1,9 +1,9 @@
 /**
  ******************************************************************************
  * @file    TrackHoldConfirmScreen.hpp
- * @brief   Hold-to-confirm for ending an activity: a ring fills over 1.5 s
- *          while R1 stays held and the centre counts 3 -> 2 -> 1. Releasing
- *          early returns to the action menu; completing saves or discards.
+ * @brief   Hold-to-confirm for ending an activity or resetting calibration:
+ *          a ring fills over 1.5 s while R1 stays held and the centre counts
+ *          3 -> 2 -> 1. Releasing early returns to the previous menu.
  *
  * Port of the Run app's TrackHoldConfirmationView. The ring is driven by an
  * lv_anim, which is what TouchGFX's tick-driven TimerRing amounted to.

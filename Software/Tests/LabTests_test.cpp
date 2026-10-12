@@ -54,6 +54,32 @@ TEST(LabTests, FullDropsTheOldest)
                                [](const auto& a, const auto& b) { return a.utc < b.utc; }));
 }
 
+TEST(LabTests, ResetIgnoresStoredTestsOnly)
+{
+    LabTests t;
+    EXPECT_FALSE(t.resetCalibration());
+    t.add(entry(100, 50.0f));
+    t.add(entry(200, 52.0f));
+    EXPECT_TRUE(t.resetCalibration());
+    EXPECT_EQ(t.activeCount(), 0u);
+    EXPECT_FALSE(t.resetCalibration());
+
+    t.add(entry(50, 48.0f));                     // added later, dated earlier
+    EXPECT_EQ(t.activeCount(), 1u);
+    EXPECT_FALSE(t.entries[0].ignored);
+}
+
+TEST(LabTests, ResetSurvivesSameValueButNotANewOne)
+{
+    LabTests t;
+    t.add(entry(100, 50.0f));
+    t.resetCalibration();
+    EXPECT_FALSE(t.add(entry(100, 50.0f)));      // config re-read on start
+    EXPECT_TRUE(t.entries[0].ignored);
+    EXPECT_TRUE(t.add(entry(100, 51.0f)));
+    EXPECT_FALSE(t.entries[0].ignored);
+}
+
 TEST(LabTestsSerializer, RoundTripsAndSkipsInvalid)
 {
     KernelFixture fixture;
@@ -73,4 +99,22 @@ TEST(LabTestsSerializer, RoundTripsAndSkipsInvalid)
     ASSERT_TRUE(LabTestsSerializer(fixture.kernel, kFile).load(loaded));
     ASSERT_EQ(loaded.count, 1u);
     EXPECT_EQ(loaded.entries[0].utc, 3);
+    EXPECT_FALSE(loaded.entries[0].ignored);   // files from before the flag
+}
+
+TEST(LabTestsSerializer, KeepsIgnoredFlag)
+{
+    KernelFixture fixture;
+    constexpr const char* kFile = "Activity/lab_tests.json";
+    LabTests saved;
+    saved.add(entry(100, 48.5f));
+    saved.resetCalibration();
+    saved.add(entry(200, 55.0f));
+    ASSERT_TRUE(LabTestsSerializer(fixture.kernel, kFile).save(saved));
+
+    LabTests loaded;
+    ASSERT_TRUE(LabTestsSerializer(fixture.kernel, kFile).load(loaded));
+    ASSERT_EQ(loaded.count, 2u);
+    EXPECT_TRUE(loaded.entries[0].ignored);
+    EXPECT_FALSE(loaded.entries[1].ignored);
 }

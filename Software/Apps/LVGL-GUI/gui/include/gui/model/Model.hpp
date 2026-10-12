@@ -101,7 +101,7 @@ public:
     uint8_t getAccessoryState() const;
 
     // Hold-to-confirm: which action the shared TrackHoldConfirmation screen performs.
-    enum class HoldConfirmMode { Finish, Discard };
+    enum class HoldConfirmMode { Finish, Discard, ResetCalibration };
     void setHoldConfirmMode(HoldConfirmMode mode);
     HoldConfirmMode getHoldConfirmMode() const;
 
@@ -113,6 +113,8 @@ public:
     bool isTrackPaused() const;
     const Track::Data& getTrackData() const;
     void saveLap();
+    /// Stop all stored lab tests from calibrating; they stay visible.
+    void resetCalibration();
     void saveTrack();
     void discardTrack();
     bool isTrackSummaryAvailable() const;

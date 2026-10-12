@@ -38,6 +38,12 @@ const char* viewName(View v)
         default:             return "Last 20 runs";
     }
 }
+
+/// Lab tests excluded by a calibration reset are dimmed.
+uint32_t labColor(const LabTests::Entry& e)
+{
+    return e.ignored ? Color::GRAY : Color::WHITE;
+}
 } // namespace
 
 HistoryScreen::HistoryScreen(Model& model)
@@ -160,7 +166,7 @@ void HistoryScreen::setView(View view)
     for (std::size_t i = 0; mLabs && i < mLabs->count; ++i) {
         const LabTests::Entry& e = mLabs->entries[i];
         if (Vo2Trend::xOf(mSelection, e.utc)) {
-            mListRows[mListCount++] = {e.utc, e.vo2max, Color::WHITE, true};
+            mListRows[mListCount++] = {e.utc, e.vo2max, labColor(e), true};
         }
     }
     std::sort(mListRows.begin(), mListRows.begin() + mListCount,
@@ -224,6 +230,7 @@ void HistoryScreen::drawTrend()
         if (i < mLabMarks.count) {
             const Vo2Trend::LabMark& m = mLabMarks.marks[i];
             lv_obj_set_pos(mLabRings[i], xOf(m.x) - kRingR, yOf(m.entry->vo2max) - kRingR);
+            lv_obj_set_style_border_color(mLabRings[i], Theme::rgb(labColor(*m.entry)), LV_PART_MAIN);
         }
     }
 

@@ -45,6 +45,7 @@ namespace CustomMessage {
     constexpr SDK::MessageType::Type TRACK_PAUSE           = 0x0000000D;
     constexpr SDK::MessageType::Type TRACK_RESUME          = 0x0000000E;
     constexpr SDK::MessageType::Type MANUAL_LAP            = 0x0000000F;
+    constexpr SDK::MessageType::Type CALIBRATION_RESET     = 0x00000010;
 
     // Service <-> GUI
     struct SettingsUpd : public SDK::MessageBase {
@@ -261,6 +262,10 @@ namespace CustomMessage {
 
     struct ManualLap : public SDK::MessageBase {
         ManualLap() : SDK::MessageBase(MANUAL_LAP) {}
+    };
+
+    struct CalibrationReset : public SDK::MessageBase {
+        CalibrationReset() : SDK::MessageBase(CALIBRATION_RESET) {}
     };
 
 

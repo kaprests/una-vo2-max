@@ -20,6 +20,7 @@ void MenuSettingsScreen::build()
 {
     mItems[Menu::ID_ALERTS]     = { Style::Simple, "Lap Alerts" };
     mItems[Menu::ID_SHOW_GUIDE] = { Style::Toggle, "Show\nguide", "Show guide", &poppins_semibold_25 };
+    mItems[Menu::ID_RESET_CALIBRATION] = { Style::Simple, "Reset\ncalibration", "Reset calibration", &poppins_semibold_25 };
 
     mMenu      = std::make_unique<WheelMenu>(mRoot, mItems, Menu::ID_COUNT);
     mButtons   = std::make_unique<Widgets::Buttons>(mRoot);
@@ -53,6 +54,15 @@ void MenuSettingsScreen::onKey(uint8_t code)
         case Btn::R1:
             if (mMenu->selected() == Menu::ID_ALERTS) {
                 ScreenManager::instance().goTo(ScreenId::MenuAlerts);
+            } else if (mMenu->selected() == Menu::ID_RESET_CALIBRATION) {
+                const LabTests* labs = mModel.getLabTests();
+                if (labs && labs->activeCount() > 0) {
+                    // Hold-to-confirm starts on the press, as on the action menu.
+                    mModel.setHoldConfirmMode(Model::HoldConfirmMode::ResetCalibration);
+                    ScreenManager::instance().goTo(ScreenId::TrackHoldConfirm);
+                } else {
+                    ScreenManager::instance().goTo(ScreenId::CalibrationResetNone);
+                }
             } else {
                 Settings s = mModel.getSettings();
                 s.showGuide = !s.showGuide;

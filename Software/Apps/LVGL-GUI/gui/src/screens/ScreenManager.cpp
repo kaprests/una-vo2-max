@@ -24,6 +24,7 @@
 #include "gui/screens/TrackScreen.hpp"
 #include "gui/screens/TrackActionScreen.hpp"
 #include "gui/screens/TrackHoldConfirmScreen.hpp"
+#include "gui/screens/CalibrationResetScreen.hpp"
 #include "gui/screens/TrackLapScreen.hpp"
 #include "gui/screens/TrackResultScreen.hpp"
 #include "gui/screens/TrackSummaryScreen.hpp"
@@ -131,6 +132,8 @@ Screen* ScreenManager::create(ScreenId id)
         case ScreenId::MenuAlertTime:             return new MenuAlertValueScreen(m, Alert::Time);
         case ScreenId::MenuAlertDistanceSaved:    return new AlertSavedScreen(m, Alert::Distance);
         case ScreenId::MenuAlertTimeSaved:        return new AlertSavedScreen(m, Alert::Time);
+        case ScreenId::CalibrationResetDone:      return new CalibrationResetScreen(m, true);
+        case ScreenId::CalibrationResetNone:      return new CalibrationResetScreen(m, false);
 
         case ScreenId::TrackStartConfirm:         return new TrackStartConfirmScreen(m);
         case ScreenId::Track:                     return new TrackScreen(m);

@@ -5,7 +5,8 @@
  *          list, browsed with L1/L2. On the trend page R1 cycles the view
  *          (last 20 runs, 6 months, 1 year); the list follows it. Lab test
  *          results are shown as rings and "Lab" rows; estimates are calibrated
- *          against them (Vo2Calibration). R2 returns to the main menu.
+ *          against them (Vo2Calibration); tests excluded by a reset are
+ *          grey. R2 returns to the main menu.
  ******************************************************************************
  */
 

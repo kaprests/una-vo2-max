@@ -200,6 +200,11 @@ void Service::run()
                     handleEvent(*static_cast<CustomMessage::ManualLap*>(msg));
                 } break;
 
+                case CustomMessage::CALIBRATION_RESET:  {
+                    LOG_DEBUG("CALIBRATION_RESET\n");
+                    handleEvent(*static_cast<CustomMessage::CalibrationReset*>(msg));
+                } break;
+
 
                 // Sensors messages
                 case SDK::MessageType::EVENT_SENSOR_LAYER_DATA: {
@@ -530,6 +535,17 @@ void Service::handleEvent(const CustomMessage::ManualLap& /*event*/)
     saveLap();
     SDK::send_msg<CustomMessage::LapEnded>(mKernel, mTrackData.lapNum);
     notifyLapEnd();
+}
+
+void Service::handleEvent(const CustomMessage::CalibrationReset& /*event*/)
+{
+    if (!mLabTests.resetCalibration()) {
+        return;
+    }
+    if (!mLabTestsSerializer.save(mLabTests)) {
+        LOG_ERROR("Can't save lab tests\n");
+    }
+    SDK::send_msg<CustomMessage::LabTestsUpd>(mKernel, &mLabTests);
 }
 
 void Service::setCapabilities()

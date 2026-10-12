@@ -22,12 +22,30 @@ struct LabTests {
     struct Entry {
         std::time_t utc    = 0;   ///< Noon UTC on the test date.
         float       vo2max = 0.0f;
+        bool        ignored = false;   ///< Excluded from calibration by a reset.
     };
 
     std::array<Entry, kCapacity> entries{};
     std::size_t                  count = 0;
 
     bool empty() const { return count == 0; }
+
+    std::size_t activeCount() const
+    {
+        return static_cast<std::size_t>(std::count_if(entries.begin(), entries.begin() + count,
+                                                      [](const Entry& e) { return !e.ignored; }));
+    }
+
+    /// Exclude every stored test from calibration. False if none was active.
+    bool resetCalibration()
+    {
+        bool changed = false;
+        for (std::size_t i = 0; i < count; ++i) {
+            changed |= !entries[i].ignored;
+            entries[i].ignored = true;
+        }
+        return changed;
+    }
 
     /// Insert by date, replacing an entry with the same date and dropping the
     /// oldest when full. False if nothing changed.
@@ -37,10 +55,12 @@ struct LabTests {
         Entry* const pos = std::lower_bound(entries.begin(), end, e.utc,
                                             [](const Entry& a, std::time_t t) { return a.utc < t; });
         if (pos != end && pos->utc == e.utc) {
+            // The config value is re-read on every start, so an unchanged value
+            // must not undo a reset.
             if (pos->vo2max == e.vo2max) {
                 return false;
             }
-            pos->vo2max = e.vo2max;
+            *pos = e;
             return true;
         }
         if (count == kCapacity) {

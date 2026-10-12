@@ -170,6 +170,11 @@ void Model::saveLap()
     SDK::send_msg<CustomMessage::ManualLap>(mKernel);
 }
 
+void Model::resetCalibration()
+{
+    SDK::send_msg<CustomMessage::CalibrationReset>(mKernel);
+}
+
 void Model::saveTrack()
 {
     SDK::send_msg<CustomMessage::TrackStop>(mKernel, false);

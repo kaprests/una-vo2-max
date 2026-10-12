@@ -90,5 +90,21 @@ TEST_P(Vo2CalibrationTest, LeavesResultsWithoutEstimateUnchanged)
     EXPECT_EQ(calibrate(none, 0, a, m).vo2max, 0.0f);
 }
 
+TEST_P(Vo2CalibrationTest, IgnoredLabTestsDoNotCalibrate)
+{
+    Vo2History h;
+    h.add(run(0, 50.0f));
+    h.add(run(200, 50.0f));
+    LabTests labs;
+    labs.add({0, 52.0f});
+    labs.resetCalibration();
+    EXPECT_EQ(anchors(h, labs, m).count, 0u);
+
+    labs.add({200 * kDay, 54.0f});
+    const Anchors a = anchors(h, labs, m);
+    ASSERT_EQ(a.count, 1u);
+    EXPECT_EQ(a.items[0].utc, 200 * kDay);
+}
+
 INSTANTIATE_TEST_SUITE_P(Methods, Vo2CalibrationTest,
                          ::testing::Values(Method::FACTOR, Method::RUNNING_COST));

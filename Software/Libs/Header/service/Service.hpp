@@ -196,6 +196,7 @@ private:
     void handleEvent(const CustomMessage::TrackPause& event);
     void handleEvent(const CustomMessage::TrackResume& event);
     void handleEvent(const CustomMessage::ManualLap& event);
+    void handleEvent(const CustomMessage::CalibrationReset& event);
 
     // -- Track control --------------------------------------------------------
 

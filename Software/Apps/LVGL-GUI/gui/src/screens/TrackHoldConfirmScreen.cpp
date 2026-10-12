@@ -1,7 +1,7 @@
 /**
  ******************************************************************************
  * @file    TrackHoldConfirmScreen.cpp
- * @brief   Hold-to-confirm for ending an activity (see the header).
+ * @brief   Hold-to-confirm for ending an activity or resetting calibration.
  ******************************************************************************
  */
 
@@ -37,7 +37,9 @@ void TrackHoldConfirmScreen::build()
 
     Theme::imageTinted(mRoot, &img_tickgreen_22x17, 186, 60,
                        finish ? SDK::GUI::Color::CHARTREUSE : SDK::GUI::Color::RED);
-    Theme::label(mRoot, Theme::Font::Medium18, finish ? "Hold to\nFinish" : "Hold to\nDiscard", 53, 67, 133);
+    const char* text = finish ? "Hold to\nFinish"
+                     : mMode == Model::HoldConfirmMode::Discard ? "Hold to\nDiscard" : "Hold to\nReset";
+    Theme::label(mRoot, Theme::Font::Medium18, text, 53, 67, 133);
     mNumber = Theme::label(mRoot, Theme::Font::SemiBold60, "3", 102, 103, 36);
 }
 
@@ -85,7 +87,8 @@ void TrackHoldConfirmScreen::cancel()
         return;
     }
     lv_anim_delete(this, nullptr);
-    ScreenManager::instance().goTo(ScreenId::TrackAction);
+    ScreenManager::instance().goTo(mMode == Model::HoldConfirmMode::ResetCalibration
+                                       ? ScreenId::MenuSettings : ScreenId::TrackAction);
 }
 
 void TrackHoldConfirmScreen::animExecCb(void* var, int32_t value)
@@ -111,9 +114,18 @@ void TrackHoldConfirmScreen::animReadyCb(lv_anim_t* a)
         return;
     }
     self->mFired = true;
-    ScreenManager::instance().goTo(self->mMode == Model::HoldConfirmMode::Finish
-                                       ? ScreenId::TrackSaved
-                                       : ScreenId::TrackDiscarded);
+    switch (self->mMode) {
+        case Model::HoldConfirmMode::Finish:
+            ScreenManager::instance().goTo(ScreenId::TrackSaved);
+            break;
+        case Model::HoldConfirmMode::Discard:
+            ScreenManager::instance().goTo(ScreenId::TrackDiscarded);
+            break;
+        case Model::HoldConfirmMode::ResetCalibration:
+            self->mModel.resetCalibration();
+            ScreenManager::instance().goTo(ScreenId::CalibrationResetDone);
+            break;
+    }
 }
 
 void TrackHoldConfirmScreen::setCountdown(uint32_t number)

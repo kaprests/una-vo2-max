@@ -1,7 +1,7 @@
 /**
  ******************************************************************************
  * @file    MenuSettingsScreen.hpp
- * @brief   Settings menu: Lap Alerts and the Show guide toggle.
+ * @brief   Settings menu: Lap Alerts, the Show guide toggle and Reset calibration.
  ******************************************************************************
  */
 
