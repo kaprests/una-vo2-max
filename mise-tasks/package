@@ -35,6 +35,8 @@ m = json.load(open(sys.argv[1]))
 for key, want in (("appVersion", sys.argv[2]), ("binary", sys.argv[3]), ("icon", "icon.png")):
     if m.get(key) != want:
         sys.exit(f"{sys.argv[1]}: {key} is {m.get(key)!r}, expected {want!r}")
+if not isinstance(m.get("stravaExport"), bool):
+    sys.exit(f"{sys.argv[1]}: missing required key 'stravaExport' (true or false)")
 EOF
 
 mkdir -p dist

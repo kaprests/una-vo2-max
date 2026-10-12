@@ -43,7 +43,7 @@ rm -f "$sim/linux-check.sh"
 
 # The App ID lives in Output/app-manifest.json only; both CMake builds read it
 # from there. Fill in the rest of the manifest before "mise run package".
-[ -f Output/app-manifest.json ] || printf '{\n  "id": "%s"\n}\n' "$app_id" > Output/app-manifest.json
+[ -f Output/app-manifest.json ] || printf '{\n  "id": "%s",\n  "stravaExport": false\n}\n' "$app_id" > Output/app-manifest.json
 manifest_id() {
   printf '%s\n' '# The App ID lives in the manifest only.' \
     "set(APP_MANIFEST_FILE \"$1/app-manifest.json\")" \
