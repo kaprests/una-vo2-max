@@ -6,6 +6,8 @@
   <img src="docs/images/guide.png" width="240" alt="Run guide">
 </p>
 
+[How the estimate works](docs/METHOD.md)
+
 ## Setup
 
 Requires [mise](https://mise.jdx.dev). Linux (Arch or Debian/Ubuntu).
