@@ -12,7 +12,7 @@
     "GPS",
     "HR"
   ],
-  "description": "Estimates VO2 max from heart rate and pace during a steady outdoor run. Enter your max HR (and lab VO2 max results, if you have them) in the UNA app. Early version: thresholds are not yet tuned on real watch data, so treat results as indicative. Feedback welcome.",
+  "description": "Estimate of VO2 max from heart rate and pacing data during a steady outdoor run. Enter max HR (required) and optionally VO2 max lab results in the UNA app. Early version: fully developed with the simulator and not yet tested on a real watch. Treat results as indicative.",
   "id": "DDBF14BBA60D533F",
   "supportsLaps": true,
   "supportsDistance": true,
