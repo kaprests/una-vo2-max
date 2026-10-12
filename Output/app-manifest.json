@@ -12,7 +12,7 @@
     "GPS",
     "HR"
   ],
-  "description": "Estimate VO2 max score from heart rate and pace during a steady outdoor run. Early version: developed fully in simulator, so threshold values are not yet tuned on real watch data. Treat results as indicative.",
+  "description": "Estimates VO2 max from heart rate and pace during a steady outdoor run. Enter your max HR (and lab VO2 max results, if you have them) in the UNA app. Early version: thresholds are not yet tuned on real watch data, so treat results as indicative. Feedback welcome.",
   "id": "DDBF14BBA60D533F",
   "supportsLaps": true,
   "supportsDistance": true,
@@ -28,12 +28,32 @@
       "id": "maxHr",
       "type": "int",
       "label": "Max heart rate",
-      "description": "Needed for the VO2 max estimate. Leave at 0 if unknown.",
+      "description": "Needed for the VO2 max estimate; use the value from a lab test if you have one. Leave at 0 if unknown.",
       "default": 0,
       "min": 0,
       "max": 230,
       "unit": "bpm",
       "validationMessage": "0 to 230 bpm."
+    },
+    {
+      "id": "labVo2max",
+      "type": "float",
+      "label": "Lab VO2 max",
+      "description": "VO2 max from a lab test in ml/kg/min, if you have one. Each new value and date is added to the lab results in the app. Leave at 0 if none.",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 90.0,
+      "validationMessage": "0 to 90 ml/kg/min."
+    },
+    {
+      "id": "labDate",
+      "type": "string",
+      "label": "Lab test date",
+      "description": "Date of the lab test above, as YYYY-MM-DD.",
+      "default": "",
+      "maxLength": 10,
+      "pattern": "([0-9]{4}-[0-9]{2}-[0-9]{2})?",
+      "validationMessage": "A date as YYYY-MM-DD, or empty."
     }
   ]
 }

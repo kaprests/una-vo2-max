@@ -195,6 +195,11 @@ const Vo2History* Model::getVo2History() const
     return mVo2History;
 }
 
+const LabTests* Model::getLabTests() const
+{
+    return mLabTests;
+}
+
 // Private
 void Model::decIdleTimer()
 {
@@ -333,6 +338,10 @@ bool Model::customMessageHandler(SDK::MessageBase* message)
         case CustomMessage::VO2_HISTORY:
             mVo2History = static_cast<CustomMessage::Vo2HistoryUpd*>(message)->history;
             modelListener->onVo2History();
+            break;
+
+        case CustomMessage::LAB_TESTS:
+            mLabTests = static_cast<CustomMessage::LabTestsUpd*>(message)->tests;
             break;
 
         case CustomMessage::ACCESSORY_STATUS: {

@@ -117,3 +117,23 @@ TEST_F(Vo2TrendTest, UnknownTodayUsesTheLatestEntry)
     ASSERT_EQ(s.count, 1u);
     EXPECT_EQ(s.lastMonth, 2);   // March
 }
+
+TEST_F(Vo2TrendTest, XOfPlacesByDateInTimeViews)
+{
+    add(2026, 10, 1, 50.0f);
+    const auto s = Vo2Trend::select(history, View::MONTHS_6, day(2026, 10, 31));
+    EXPECT_NEAR(*Vo2Trend::xOf(s, utc(2026, 5, 1)), 0.0f, 0.01f);
+    EXPECT_NEAR(*Vo2Trend::xOf(s, utc(2026, 10, 31)), 1.0f, 0.01f);
+    EXPECT_FALSE(Vo2Trend::xOf(s, utc(2026, 4, 30)));
+}
+
+TEST_F(Vo2TrendTest, XOfUsesNearestRunInRunsView)
+{
+    add(2026, 9, 1, 50.0f);
+    add(2026, 9, 11, 51.0f);
+    add(2026, 9, 21, 52.0f);
+    const auto s = Vo2Trend::select(history, View::RUNS, day(2026, 10, 1));
+    EXPECT_FLOAT_EQ(*Vo2Trend::xOf(s, utc(2026, 9, 12)), 0.5f);
+    EXPECT_FLOAT_EQ(*Vo2Trend::xOf(s, utc(2026, 10, 4)), 1.0f);    // within the margin
+    EXPECT_FALSE(Vo2Trend::xOf(s, utc(2026, 10, 10)));             // beyond it
+}

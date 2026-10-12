@@ -14,6 +14,7 @@
 #ifndef FORMAT_HPP
 #define FORMAT_HPP
 
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -122,6 +123,16 @@ inline void shortTime(char* buf, size_t n, std::time_t sec)
     }
 }
 
+/// "+6.2" / "-0.7": fixed() with an explicit sign.
+inline void delta(char* buf, size_t n, float value, int decimals)
+{
+    if (n < 2) {
+        return;
+    }
+    buf[0] = value < 0.0f ? '-' : '+';
+    fixed(buf + 1, n - 1, std::fabs(value), decimals);
+}
+
 /// "Jan" .. "Dec" for tm_mon 0..11.
 inline const char* monthName(int month)
 {
@@ -136,6 +147,14 @@ inline void date(char* buf, size_t n, std::time_t utc)
     std::tm t{};
     localtime_r(&utc, &t);
     snprintf(buf, n, "%d %s %d", t.tm_mday, monthName(t.tm_mon), 1900 + t.tm_year);
+}
+
+/// "8 Oct" in local time.
+inline void dayMonth(char* buf, size_t n, std::time_t utc)
+{
+    std::tm t{};
+    localtime_r(&utc, &t);
+    snprintf(buf, n, "%d %s", t.tm_mday, monthName(t.tm_mon));
 }
 
 /// Whole beats per minute, or "---" below the physiological minimum.

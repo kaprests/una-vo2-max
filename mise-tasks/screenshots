@@ -26,6 +26,6 @@ shoot() {
     { echo "Tour '$1' failed; see $root/log.txt" >&2; exit 1; }
 }
 
-shoot full max-hr-190 history
+shoot full max-hr-190-lab history
 shoot no-max-hr no-max-hr
 python tools/screenshots.py "$work/raw" screenshots

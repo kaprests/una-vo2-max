@@ -25,6 +25,7 @@ constexpr int32_t kPlotY  = 8;
 constexpr int32_t kPlotW  = 152;
 constexpr int32_t kPlotH  = 90;
 constexpr int32_t kDotR   = 3;
+constexpr int32_t kRingR  = 5;
 constexpr int32_t kChartY = 60;
 constexpr int32_t kChartH = kPlotY + kPlotH + 24;   // room for the month labels
 constexpr int32_t kNoteY  = kChartY + kChartH + 4;
@@ -52,7 +53,8 @@ void HistoryScreen::build()
     for (uint8_t p = 0; p < PAGE_COUNT; ++p) {
         mPages[p] = Theme::container(mRoot, 0, 0, 240, 240);
     }
-    mLatest = std::make_unique<Widgets::Vo2Card>(mPages[PAGE_LATEST]);
+    mLatest    = std::make_unique<Widgets::Vo2Card>(mPages[PAGE_LATEST]);
+    mLatestLab = Theme::label(mPages[PAGE_LATEST], F::Regular14, "", 50, 198, 140);
     buildTrend(mPages[PAGE_TREND]);
     buildList(mPages[PAGE_LIST]);
 
@@ -77,6 +79,12 @@ void HistoryScreen::buildTrend(lv_obj_t* f)
     for (auto& dot : mDots) {
         dot = Theme::dot(mChart, 0, 0, kDotR, Color::GRAY);
     }
+    for (auto& ring : mLabRings) {
+        ring = Theme::dot(mChart, 0, 0, kRingR, Color::WHITE);
+        lv_obj_set_style_bg_opa(ring, LV_OPA_TRANSP, LV_PART_MAIN);
+        lv_obj_set_style_border_width(ring, 2, LV_PART_MAIN);
+        lv_obj_set_style_border_color(ring, Theme::rgb(Color::WHITE), LV_PART_MAIN);
+    }
 
     mTrendNote = Theme::label(f, F::Regular16, "", 30, kNoteY, 180);
 }
@@ -94,22 +102,56 @@ void HistoryScreen::onShow()
 {
     mModel.resetIdleTimer();
     mHistory = mModel.getVo2History();
+    mLabs    = mModel.getLabTests();
     if (!mHistory || mHistory->empty()) {
         ScreenManager::instance().goTo(ScreenId::Main);
         return;
     }
-    const Vo2History::Entry& latest = mHistory->latest();
-    mLatest->set(latest.result, latest.utc);
+    setLatest();
     setView(View::RUNS);
     showPage(PAGE_LATEST);
+}
+
+void HistoryScreen::setLatest()
+{
+    const Vo2History::Entry& latest = mHistory->latest();
+    mLatest->set(latest.result, latest.utc);
+
+    const bool hasLab = mLabs && !mLabs->empty();
+    Theme::setHidden(mLatestLab, !hasLab);
+    if (hasLab) {
+        const float lab = mLabs->entries[mLabs->count - 1].vo2max;
+        char value[12];
+        char delta[12];
+        Fmt::fixed(value, sizeof(value), lab, 1);
+        Fmt::delta(delta, sizeof(delta), latest.result.vo2max - lab, 1);
+        lv_label_set_text_fmt(mLatestLab, "Lab %s  %s", value, delta);
+    }
 }
 
 void HistoryScreen::setView(View view)
 {
     mView      = view;
     mSelection = Vo2Trend::select(*mHistory, view, mModel.getLocalTime());
+
+    mListCount = 0;
+    for (std::size_t i = 0; i < mSelection.count; ++i) {
+        const Vo2History::Entry& e = *mSelection.points[i].entry;
+        mListRows[mListCount++] = {e.utc, e.result.vo2max, Widgets::vo2Color(e.result.confidence), false};
+    }
+    const std::size_t labs = mLabs ? mLabs->count : 0;
+    for (std::size_t i = 0; i < kMaxLabs; ++i) {
+        mLabX[i] = i < labs ? Vo2Trend::xOf(mSelection, mLabs->entries[i].utc) : std::nullopt;
+        if (mLabX[i]) {
+            const LabTests::Entry& e = mLabs->entries[i];
+            mListRows[mListCount++] = {e.utc, e.vo2max, Color::WHITE, true};
+        }
+    }
+    std::sort(mListRows.begin(), mListRows.begin() + mListCount,
+              [](const ListRow& a, const ListRow& b) { return a.utc > b.utc; });
+
     mListPage  = 0;
-    mListPages = static_cast<uint8_t>(std::max<std::size_t>((mSelection.count + kRows - 1) / kRows, 1));
+    mListPages = static_cast<uint8_t>(std::max<std::size_t>((mListCount + kRows - 1) / kRows, 1));
     mIndicator->setCount(static_cast<uint16_t>(PAGE_LIST + mListPages));
     drawTrend();
     fillList();
@@ -127,10 +169,18 @@ void HistoryScreen::drawTrend()
     }
     lv_obj_set_y(mTrendNote, kNoteY);
 
-    const auto [lo, hi] = std::minmax_element(s.points.begin(), s.points.begin() + s.count,
-        [](const auto& a, const auto& b) { return a.entry->result.vo2max < b.entry->result.vo2max; });
-    const float yMin = std::floor(lo->entry->result.vo2max) - 2.0f;
-    const float yMax = std::ceil(hi->entry->result.vo2max) + 2.0f;
+    float lo = s.points[0].entry->result.vo2max;
+    float hi = lo;
+    for (std::size_t i = 0; i < mListCount; ++i) {
+        lo = std::min(lo, mListRows[i].vo2max);
+        hi = std::max(hi, mListRows[i].vo2max);
+    }
+    const float yMin = std::floor(lo) - 2.0f;
+    const float yMax = std::ceil(hi) + 2.0f;
+    const auto  yOf  = [&](float vo2) {
+        return kPlotY + static_cast<int32_t>(std::lround((yMax - vo2) / (yMax - yMin) * kPlotH));
+    };
+    const auto xOf = [](float x) { return kPlotX + static_cast<int32_t>(std::lround(x * kPlotW)); };
     lv_label_set_text_fmt(mMaxLabel, "%d", static_cast<int>(yMax));
     lv_label_set_text_fmt(mMinLabel, "%d", static_cast<int>(yMin));
 
@@ -145,42 +195,53 @@ void HistoryScreen::drawTrend()
             continue;
         }
         const Vo2Result& r = s.points[i].entry->result;
-        const int32_t x = kPlotX + static_cast<int32_t>(std::lround(s.points[i].x * kPlotW));
-        const int32_t y = kPlotY + static_cast<int32_t>(std::lround((yMax - r.vo2max) / (yMax - yMin) * kPlotH));
+        const int32_t x = xOf(s.points[i].x);
+        const int32_t y = yOf(r.vo2max);
         mPoints[i] = {static_cast<lv_value_precise_t>(x), static_cast<lv_value_precise_t>(y)};
         lv_obj_set_pos(mDots[i], x - kDotR, y - kDotR);
         lv_obj_set_style_bg_color(mDots[i], Theme::rgb(Widgets::vo2Color(r.confidence)), LV_PART_MAIN);
     }
     lv_line_set_points(mLine, mPoints.data(), static_cast<uint32_t>(s.count));
 
-    const float delta = s.points[s.count - 1].entry->result.vo2max - s.points[0].entry->result.vo2max;
-    char buf[12];
-    Fmt::fixed(buf, sizeof(buf), std::fabs(delta), 1);
+    for (std::size_t i = 0; i < kMaxLabs; ++i) {
+        Theme::setHidden(mLabRings[i], !mLabX[i]);
+        if (mLabX[i]) {
+            lv_obj_set_pos(mLabRings[i], xOf(*mLabX[i]) - kRingR, yOf(mLabs->entries[i].vo2max) - kRingR);
+        }
+    }
+
+    char delta[12];
+    Fmt::delta(delta, sizeof(delta), s.points[s.count - 1].entry->result.vo2max - s.points[0].entry->result.vo2max, 1);
     if (timeView) {
-        lv_label_set_text_fmt(mTrendNote, "%s  %c%s", viewName(mView), delta < 0 ? '-' : '+', buf);
+        lv_label_set_text_fmt(mTrendNote, "%s  %s", viewName(mView), delta);
     } else {
-        lv_label_set_text_fmt(mTrendNote, "%u runs  %c%s", static_cast<unsigned>(s.count),
-                              delta < 0 ? '-' : '+', buf);
+        lv_label_set_text_fmt(mTrendNote, "%u runs  %s", static_cast<unsigned>(s.count), delta);
     }
 }
 
 void HistoryScreen::fillList()
 {
     for (uint8_t r = 0; r < kRows; ++r) {
-        const std::size_t idx  = static_cast<std::size_t>(mListPage) * kRows + r;   // newest first
-        const bool        used = idx < mSelection.count;
+        const std::size_t idx  = static_cast<std::size_t>(mListPage) * kRows + r;
+        const bool        used = idx < mListCount;
         Theme::setHidden(mRows[r][0], !used);
         Theme::setHidden(mRows[r][1], !used);
         if (!used) {
             continue;
         }
-        const Vo2History::Entry& e = *mSelection.points[mSelection.count - 1 - idx].entry;
+        const ListRow& row = mListRows[idx];
         char buf[16];
-        Fmt::date(buf, sizeof(buf), e.utc);
+        if (row.lab) {
+            char day[12];
+            Fmt::dayMonth(day, sizeof(day), row.utc);
+            snprintf(buf, sizeof(buf), "Lab %s", day);
+        } else {
+            Fmt::date(buf, sizeof(buf), row.utc);
+        }
         lv_label_set_text(mRows[r][0], buf);
-        Fmt::fixed(buf, sizeof(buf), e.result.vo2max, 1);
+        Fmt::fixed(buf, sizeof(buf), row.vo2max, 1);
         lv_label_set_text(mRows[r][1], buf);
-        lv_obj_set_style_text_color(mRows[r][1], Theme::rgb(Widgets::vo2Color(e.result.confidence)), LV_PART_MAIN);
+        lv_obj_set_style_text_color(mRows[r][1], Theme::rgb(row.color), LV_PART_MAIN);
     }
 }
 

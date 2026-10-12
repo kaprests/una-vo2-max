@@ -24,6 +24,7 @@
 #include "WristTiltDetector.hpp"
 #include "Vo2MaxEstimator.hpp"
 #include "Vo2HistorySerializer.hpp"
+#include "LabTestsSerializer.hpp"
 
 class Service : public WristTiltDetector::IListener
 {
@@ -69,6 +70,8 @@ private:
     ActivitySummarySerializer mActivitySummarySerializer;
     Vo2History                mVo2History;
     Vo2HistorySerializer      mVo2HistorySerializer;
+    LabTests                  mLabTests;
+    LabTestsSerializer        mLabTestsSerializer;
     ActivityWriter            mActivityWriter;
     SDK::TrackMapBuilder      mTrackMapBuilder;
 
@@ -197,6 +200,7 @@ private:
     // -- Track control --------------------------------------------------------
 
     void sendInitialInfoToGui();
+    void loadConfig();
     void startTrack(std::time_t utc);
     void processTrack();
     void saveLap(float autoLapDistanceM = 0.0f);

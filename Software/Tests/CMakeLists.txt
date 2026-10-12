@@ -22,10 +22,13 @@ add_executable(vo2max-host-tests
     SettingsSerializer_test.cpp
     Vo2History_test.cpp
     Vo2Trend_test.cpp
+    LabTests_test.cpp
     ${LIBS}/Sources/Vo2MaxEstimator.cpp
     ${LIBS}/Sources/ActivitySummarySerializer.cpp
     ${LIBS}/Sources/SettingsSerializer.cpp
     ${LIBS}/Sources/Vo2HistorySerializer.cpp
+    ${LIBS}/Sources/LabTestsSerializer.cpp
+    ${LIBS}/Sources/JsonFile.cpp
     ${LIBS}/Sources/Vo2Json.cpp
     ${SDK}/Tests/Host/support/KernelTestDoubles.cpp
     ${SDK}/Libs/Source/UnaLogger/Logger.cpp

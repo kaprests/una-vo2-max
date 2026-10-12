@@ -17,7 +17,9 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdlib>
 #include <ctime>
+#include <optional>
 
 #include "Vo2History.hpp"
 
@@ -36,8 +38,11 @@ struct Point {
 struct Selection {
     std::array<Point, kMaxPoints> points{};
     std::size_t count      = 0;
+    View        view       = View::RUNS;
     int         firstMonth = 0;   ///< 0..11; time views only
     int         lastMonth  = 0;
+    int         windowStart = 0;  ///< Month index (tm_year * 12 + tm_mon) of the first month.
+    int         months      = 0;
 };
 
 namespace Detail
@@ -69,12 +74,23 @@ inline int daysInMonth(const std::tm& t)
     const bool leap = (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
     return kDays[t.tm_mon] + (t.tm_mon == 1 && leap);
 }
+
+/// Position of local date @p t in a window of @p months starting at month index @p start.
+inline std::optional<float> position(const std::tm& t, int start, int months)
+{
+    const int month = monthIndex(t) - start;
+    if (month < 0 || month >= months) {
+        return std::nullopt;
+    }
+    return (month + (t.tm_mday - 0.5f) / daysInMonth(t)) / months;
+}
 } // namespace Detail
 
 /// @p today: the current local date; tm_year 0 (not yet known) uses the latest entry's.
 inline Selection select(const Vo2History& h, View view, const std::tm& today)
 {
     Selection s;
+    s.view = view;
     if (h.empty()) {
         return s;
     }
@@ -93,21 +109,22 @@ inline Selection select(const Vo2History& h, View view, const std::tm& today)
     const std::tm anchor      = today.tm_year ? today : Detail::local(h.latest().utc);
     const int     last        = Detail::monthIndex(anchor);
     const int     first       = last - def.months + 1;
-    s.firstMonth = ((first % 12) + 12) % 12;
-    s.lastMonth  = anchor.tm_mon;
+    s.firstMonth  = ((first % 12) + 12) % 12;
+    s.lastMonth   = anchor.tm_mon;
+    s.windowStart = first;
+    s.months      = def.months;
 
     int lastPart = -1;
     for (std::size_t i = 0; i < h.count; ++i) {
         const Vo2History::Entry& e = h.entries[i];
-        const std::tm t     = Detail::local(e.utc);
-        const int     month = Detail::monthIndex(t) - first;
-        if (month < 0 || month >= def.months) {
+        const std::tm t = Detail::local(e.utc);
+        const auto    x = Detail::position(t, first, def.months);
+        if (!x) {
             continue;
         }
-        const int days = Detail::daysInMonth(t);
         const int sub  = std::min((t.tm_mday - 1) / (30 / def.partsPerMonth), def.partsPerMonth - 1);
-        const int part = month * def.partsPerMonth + sub;
-        const Point p{&e, (month + (t.tm_mday - 0.5f) / days) / def.months};
+        const int part = (Detail::monthIndex(t) - first) * def.partsPerMonth + sub;
+        const Point p{&e, *x};
 
         if (part != lastPart) {
             s.points[s.count++] = p;
@@ -117,6 +134,25 @@ inline Selection select(const Vo2History& h, View view, const std::tm& today)
         }
     }
     return s;
+}
+
+inline constexpr std::time_t kRunsMarginSec = 14 * 86400;
+
+/// Where a dated value outside the history (e.g. a lab test) belongs on @p s:
+/// by date in the time views; at the run closest in time in RUNS, if within
+/// kRunsMarginSec of the runs shown. Empty if it is outside the view.
+inline std::optional<float> xOf(const Selection& s, std::time_t utc)
+{
+    if (s.view != View::RUNS) {
+        return Detail::position(Detail::local(utc), s.windowStart, s.months);
+    }
+    if (s.count == 0 || utc < s.points[0].entry->utc - kRunsMarginSec
+            || utc > s.points[s.count - 1].entry->utc + kRunsMarginSec) {
+        return std::nullopt;
+    }
+    const auto distance = [utc](const Point& p) { return std::llabs(static_cast<long long>(p.entry->utc - utc)); };
+    return std::min_element(s.points.begin(), s.points.begin() + s.count,
+                            [&](const Point& a, const Point& b) { return distance(a) < distance(b); })->x;
 }
 } // namespace Vo2Trend
 

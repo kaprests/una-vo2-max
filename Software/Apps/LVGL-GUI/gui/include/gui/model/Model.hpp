@@ -117,6 +117,7 @@ public:
     bool isTrackSummaryAvailable() const;
     const ActivitySummary& getTrackSummary() const;
     const Vo2History* getVo2History() const;
+    const LabTests*   getLabTests() const;
 
 private:
     // Fields required for GUI <-> Service communication
@@ -161,6 +162,7 @@ private:
     Track::State           mTrackState            {};
     const ActivitySummary* mActivitySummary = nullptr;
     const Vo2History*      mVo2History      = nullptr;
+    const LabTests*        mLabTests        = nullptr;
     Track::Data            mTrackData             {};
 };
 

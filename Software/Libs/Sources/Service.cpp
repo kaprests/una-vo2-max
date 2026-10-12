@@ -64,6 +64,7 @@ Service::Service(SDK::Kernel &kernel)
         , mSummary{}
         , mActivitySummarySerializer(mKernel, "Activity/summary.json")
         , mVo2HistorySerializer(mKernel, "Activity/vo2_history.json")
+        , mLabTestsSerializer(mKernel, "Activity/lab_tests.json")
         , mActivityWriter(mKernel, "Activity")
         , mTrackMapBuilder{}
         , mSensorGpsLocation(SDK::Sensor::Type::GPS_LOCATION, skSamplePeriod, skSampleLatency)
@@ -117,11 +118,6 @@ void Service::run()
         LOG_WARNING("Failed to load settings\n");
     }
 
-    const auto maxHr = SDK::AppConfig(mKernel, AppConfigFields::kFileName, AppConfigFields::kFields)
-                           .getInt(AppConfigFields::kMaxHr);
-    mMaxHrBpm = maxHr >= Vo2MaxEstimator::Config{}.minMaxHr ? static_cast<uint8_t>(maxHr) : 0;
-    LOG_INFO("Max HR: %u\n", mMaxHrBpm);
-
     // Get summary
     if (!mActivitySummarySerializer.load(mSummary)) {
         LOG_WARNING("Failed to load activity summary\n");
@@ -129,6 +125,8 @@ void Service::run()
     if (mVo2HistorySerializer.load(mVo2History)) {
         LOG_INFO("VO2 history: %u entries\n", static_cast<unsigned>(mVo2History.count));
     }
+    mLabTestsSerializer.load(mLabTests);
+    loadConfig();
 
     // Recover any activity a previous boot left unfinished (power loss /
     // crash mid-recording), before any new track can start.
@@ -719,6 +717,25 @@ ActivityWriter::RecordData Service::prepareRecordData()
     return fitRecord;
 }
 
+void Service::loadConfig()
+{
+    const SDK::AppConfig config(mKernel, AppConfigFields::kFileName, AppConfigFields::kFields);
+
+    const auto maxHr = config.getInt(AppConfigFields::kMaxHr);
+    mMaxHrBpm = maxHr >= Vo2MaxEstimator::Config{}.minMaxHr ? static_cast<uint8_t>(maxHr) : 0;
+    LOG_INFO("Max HR: %u\n", mMaxHrBpm);
+
+    // The companion app holds one lab result at a time; keep each one it has held.
+    char date[11];
+    config.getString(AppConfigFields::kLabDate, date, sizeof(date));
+    const float vo2 = config.getFloat(AppConfigFields::kLabVo2max);
+    if (const auto utc = LabTests::parseDate(date); utc && vo2 >= LabTests::kMinVo2
+            && mLabTests.add({*utc, vo2}) && !mLabTestsSerializer.save(mLabTests)) {
+        LOG_ERROR("Can't save lab tests\n");
+    }
+    LOG_INFO("Lab tests: %u\n", static_cast<unsigned>(mLabTests.count));
+}
+
 void Service::sendInitialInfoToGui()
 {
     // Settings
@@ -756,6 +773,7 @@ void Service::sendInitialInfoToGui()
     SDK::send_msg<CustomMessage::SettingsUpd>(mKernel, mSettings, mIsImperial, mTimeFormat12h, hrThresholds, CustomMessage::kHrThresholdsCount, mMaxHrBpm);
     SDK::send_msg<CustomMessage::Summary>(mKernel, &mSummary);
     SDK::send_msg<CustomMessage::Vo2HistoryUpd>(mKernel, &mVo2History);
+    SDK::send_msg<CustomMessage::LabTestsUpd>(mKernel, &mLabTests);
     SDK::send_msg<CustomMessage::Battery>(mKernel, static_cast<uint8_t>(mBatterySoc.get()));
 }
 

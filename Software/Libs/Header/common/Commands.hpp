@@ -13,6 +13,7 @@
 #include "Track.hpp"
 #include "ActivitySummary.hpp"
 #include "Vo2History.hpp"
+#include "LabTests.hpp"
 
 // Force 4-byte alignment for all message structures
 #pragma pack(push, 4)
@@ -35,6 +36,7 @@ namespace CustomMessage {
     constexpr SDK::MessageType::Type SUMMARY                  = 0x00000008;
     constexpr SDK::MessageType::Type ACCESSORY_STATUS          = 0x00000012;
     constexpr SDK::MessageType::Type VO2_HISTORY              = 0x00000013;
+    constexpr SDK::MessageType::Type LAB_TESTS                = 0x00000014;
 
     // GUI --> Service
     constexpr SDK::MessageType::Type SETTINGS_SAVE         = 0x0000000A;
@@ -181,6 +183,16 @@ namespace CustomMessage {
         explicit Vo2HistoryUpd(const Vo2History* history = nullptr)
             : SDK::MessageBase(VO2_HISTORY)
             , history(history)
+        {}
+    };
+
+    /// Non-owning pointer to the Service-owned lab test results.
+    struct LabTestsUpd : public SDK::MessageBase {
+        const LabTests* tests = nullptr;
+
+        explicit LabTestsUpd(const LabTests* tests = nullptr)
+            : SDK::MessageBase(LAB_TESTS)
+            , tests(tests)
         {}
     };
 
