@@ -33,14 +33,32 @@ sed -i -E \
   -e "s/^set\(APP_NAME .*/set(APP_NAME \"$name\")/" \
   -e "s/^set\(APP_USER_NAME .*/set(APP_USER_NAME \"$name\")/" \
   -e "s/^set\(APP_FILE_NAME .*/set(APP_FILE_NAME \"$name\")/" \
-  -e "s/^set\(APP_ID .*/set(APP_ID \"$app_id\")/" \
   -e "s|^set\(OUTPUT_PATH .*|set(OUTPUT_PATH \"\${CMAKE_CURRENT_SOURCE_DIR}/../../../Output\")|" \
   "Software/Apps/$name-CMake/CMakeLists.txt"
 
-# Simulator target and APP_ID, asset script (it locates the SDK by relative path)
+# Simulator target, asset script (it locates the SDK by relative path)
 sim=Software/Apps/LVGL-GUI/simulator
-sed -i -E -e "s/${from}Simulator/${name}Simulator/g" -e "s/APP_ID=\"[0-9A-F]+\"/APP_ID=\"$app_id\"/" "$sim/CMakeLists.txt"
+sed -i -E -e "s/${from}Simulator/${name}Simulator/g" "$sim/CMakeLists.txt"
 rm -f "$sim/linux-check.sh"
+
+# The App ID lives in Output/app-manifest.json only; both CMake builds read it
+# from there. Fill in the rest of the manifest before "mise run package".
+[ -f Output/app-manifest.json ] || printf '{\n  "id": "%s"\n}\n' "$app_id" > Output/app-manifest.json
+manifest_id() {
+  printf '%s\n' '# The App ID lives in the manifest only.' \
+    "set(APP_MANIFEST_FILE \"$1/app-manifest.json\")" \
+    'set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${APP_MANIFEST_FILE}")' \
+    'file(READ "${APP_MANIFEST_FILE}" APP_MANIFEST)' \
+    'string(JSON APP_ID GET "${APP_MANIFEST}" id)'
+}
+fw="Software/Apps/$name-CMake/CMakeLists.txt"
+sed -i '/^set(APP_ID /d' "$fw"
+manifest_id '${OUTPUT_PATH}' > "$fw.snippet"
+sed -i -e "/^set(GUI_PATH /r $fw.snippet" "$fw"
+manifest_id '${CMAKE_CURRENT_SOURCE_DIR}/../../../../Output' > "$sim/CMakeLists.snippet"
+sed -i -E -e 's/APP_ID="[0-9A-F]+"/APP_ID="${APP_ID}"/' \
+  -e "/^include\(.*lvgl-gui\.cmake\)/r $sim/CMakeLists.snippet" "$sim/CMakeLists.txt"
+rm -f "$fw.snippet" "$sim/CMakeLists.snippet"
 gen=Software/Apps/LVGL-GUI/assets/gen_assets.py
 [ -f "$gen" ] && sed -i -E 's|^SDK_ROOT = .*|SDK_ROOT = os.environ["UNA_SDK"]|' "$gen"
 

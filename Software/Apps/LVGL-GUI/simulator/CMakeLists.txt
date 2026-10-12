@@ -35,6 +35,12 @@ set(CMAKE_C_STANDARD 11)
 set(UNA_LVGL_CONF "${CMAKE_CURRENT_SOURCE_DIR}/lv_conf_sim.h")
 add_compile_definitions("UNA_SDK_LV_CONF=\"$ENV{UNA_SDK}/Libs/Header/SDK/Port/LVGL/lv_conf.h\"")
 
+# The App ID lives in the manifest only.
+set(APP_MANIFEST_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../../../../Output/app-manifest.json")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${APP_MANIFEST_FILE}")
+file(READ "${APP_MANIFEST_FILE}" APP_MANIFEST)
+string(JSON APP_ID GET "${APP_MANIFEST}" id)
+
 # Source lists: the mock kernel, the LVGL port and host, the app's own code.
 include($ENV{UNA_SDK}/cmake/una-simulator.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../../Libs/libs.cmake)   # LIBS_SOURCES, LIBS_INCLUDE_DIRS
@@ -72,7 +78,7 @@ target_include_directories(VO2MaxSimulator PRIVATE
 target_compile_definitions(VO2MaxSimulator PRIVATE
     ${UNA_SDK_DEFINES_SIMULATOR}
     ${UNA_SDK_DEFINES_GUI_LVGL}
-    APP_ID="E3FF7265E4DF8E81"
+    APP_ID="${APP_ID}"
     DEV_ID="UNA Simulator"
     BUILD_VERSION="1.0.0-sim"
 )
