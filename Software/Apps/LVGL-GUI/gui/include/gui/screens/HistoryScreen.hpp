@@ -14,7 +14,6 @@
 #include <array>
 #include <ctime>
 #include <memory>
-#include <optional>
 
 #include "gui/screens/Screen.hpp"
 #include "gui/widgets/Widgets.hpp"
@@ -39,6 +38,7 @@ private:
     static constexpr uint8_t kRows      = 5;
     static constexpr auto    kMaxPoints = Vo2Trend::kMaxPoints;
     static constexpr auto    kMaxLabs   = LabTests::kCapacity;
+    static constexpr auto    kMaxRings  = Vo2Trend::kMaxLabMarks;
 
     struct ListRow {
         std::time_t utc;
@@ -59,7 +59,7 @@ private:
     const LabTests*     mLabs    = nullptr;
     Vo2Trend::View      mView    = Vo2Trend::View::RUNS;
     Vo2Trend::Selection mSelection;
-    std::array<std::optional<float>, kMaxLabs> mLabX{};   ///< Per lab test; empty if outside the view.
+    Vo2Trend::LabMarks  mLabMarks;
 
     lv_obj_t* mPages[PAGE_COUNT] = {};
     std::unique_ptr<Widgets::Title>   mTitles[PAGE_COUNT];
@@ -76,7 +76,7 @@ private:
     lv_obj_t* mTrendNote  = nullptr;
     std::array<lv_obj_t*, kMaxPoints>          mDots{};
     std::array<lv_point_precise_t, kMaxPoints> mPoints{};
-    std::array<lv_obj_t*, kMaxLabs>            mLabRings{};
+    std::array<lv_obj_t*, kMaxRings>           mLabRings{};
 
     // List, newest first
     lv_obj_t* mRows[kRows][2] = {};   ///< date, value

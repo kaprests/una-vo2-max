@@ -21,6 +21,7 @@
 #include <ctime>
 #include <optional>
 
+#include "LabTests.hpp"
 #include "Vo2History.hpp"
 
 namespace Vo2Trend
@@ -153,6 +154,30 @@ inline std::optional<float> xOf(const Selection& s, std::time_t utc)
     const auto distance = [utc](const Point& p) { return std::llabs(static_cast<long long>(p.entry->utc - utc)); };
     return std::min_element(s.points.begin(), s.points.begin() + s.count,
                             [&](const Point& a, const Point& b) { return distance(a) < distance(b); })->x;
+}
+
+inline constexpr std::size_t kMaxLabMarks = 12;
+
+struct LabMark {
+    const LabTests::Entry* entry = nullptr;
+    float                  x     = 0.0f;
+};
+
+struct LabMarks {
+    std::array<LabMark, kMaxLabMarks> marks{};
+    std::size_t count = 0;
+};
+
+/// The newest kMaxLabMarks lab tests that fall within @p s, newest first.
+inline LabMarks labMarks(const Selection& s, const LabTests& tests)
+{
+    LabMarks m;
+    for (std::size_t i = tests.count; i-- > 0 && m.count < kMaxLabMarks;) {
+        if (const auto x = xOf(s, tests.entries[i].utc)) {
+            m.marks[m.count++] = {&tests.entries[i], *x};
+        }
+    }
+    return m;
 }
 } // namespace Vo2Trend
 

@@ -139,11 +139,10 @@ void HistoryScreen::setView(View view)
         const Vo2History::Entry& e = *mSelection.points[i].entry;
         mListRows[mListCount++] = {e.utc, e.result.vo2max, Widgets::vo2Color(e.result.confidence), false};
     }
-    const std::size_t labs = mLabs ? mLabs->count : 0;
-    for (std::size_t i = 0; i < kMaxLabs; ++i) {
-        mLabX[i] = i < labs ? Vo2Trend::xOf(mSelection, mLabs->entries[i].utc) : std::nullopt;
-        if (mLabX[i]) {
-            const LabTests::Entry& e = mLabs->entries[i];
+    mLabMarks = mLabs ? Vo2Trend::labMarks(mSelection, *mLabs) : Vo2Trend::LabMarks{};
+    for (std::size_t i = 0; mLabs && i < mLabs->count; ++i) {
+        const LabTests::Entry& e = mLabs->entries[i];
+        if (Vo2Trend::xOf(mSelection, e.utc)) {
             mListRows[mListCount++] = {e.utc, e.vo2max, Color::WHITE, true};
         }
     }
@@ -203,10 +202,11 @@ void HistoryScreen::drawTrend()
     }
     lv_line_set_points(mLine, mPoints.data(), static_cast<uint32_t>(s.count));
 
-    for (std::size_t i = 0; i < kMaxLabs; ++i) {
-        Theme::setHidden(mLabRings[i], !mLabX[i]);
-        if (mLabX[i]) {
-            lv_obj_set_pos(mLabRings[i], xOf(*mLabX[i]) - kRingR, yOf(mLabs->entries[i].vo2max) - kRingR);
+    for (std::size_t i = 0; i < kMaxRings; ++i) {
+        Theme::setHidden(mLabRings[i], i >= mLabMarks.count);
+        if (i < mLabMarks.count) {
+            const Vo2Trend::LabMark& m = mLabMarks.marks[i];
+            lv_obj_set_pos(mLabRings[i], xOf(m.x) - kRingR, yOf(m.entry->vo2max) - kRingR);
         }
     }
 

@@ -16,7 +16,7 @@
 #include <optional>
 
 struct LabTests {
-    static constexpr std::size_t kCapacity = 16;
+    static constexpr std::size_t kCapacity = 64;
     static constexpr float       kMinVo2   = 20.0f;   ///< Lower values count as not set.
 
     struct Entry {

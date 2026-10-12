@@ -46,10 +46,10 @@
       "validationMessage": "0 to 90 ml/kg/min."
     },
     {
-      "id": "labDate",
+      "id": "labVo2maxDate",
       "type": "string",
-      "label": "Lab test date",
-      "description": "Date of the lab test above, as YYYY-MM-DD.",
+      "label": "Lab VO2 max date",
+      "description": "Date of the lab VO2 max test above, as YYYY-MM-DD.",
       "default": "",
       "maxLength": 10,
       "pattern": "([0-9]{4}-[0-9]{2}-[0-9]{2})?",

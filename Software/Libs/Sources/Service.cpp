@@ -727,7 +727,7 @@ void Service::loadConfig()
 
     // The companion app holds one lab result at a time; keep each one it has held.
     char date[11];
-    config.getString(AppConfigFields::kLabDate, date, sizeof(date));
+    config.getString(AppConfigFields::kLabVo2maxDate, date, sizeof(date));
     const float vo2 = config.getFloat(AppConfigFields::kLabVo2max);
     if (const auto utc = LabTests::parseDate(date); utc && vo2 >= LabTests::kMinVo2
             && mLabTests.add({*utc, vo2}) && !mLabTestsSerializer.save(mLabTests)) {

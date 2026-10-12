@@ -137,3 +137,20 @@ TEST_F(Vo2TrendTest, XOfUsesNearestRunInRunsView)
     EXPECT_FLOAT_EQ(*Vo2Trend::xOf(s, utc(2026, 10, 4)), 1.0f);    // within the margin
     EXPECT_FALSE(Vo2Trend::xOf(s, utc(2026, 10, 10)));             // beyond it
 }
+
+TEST_F(Vo2TrendTest, LabMarksKeepTheNewestWithinTheView)
+{
+    add(2026, 10, 1, 50.0f);
+    LabTests labs;
+    labs.add({utc(2025, 1, 15), 45.0f});   // outside the 12-month view
+    for (int i = 0; i < 15; ++i) {
+        labs.add({utc(2026, 1 + i % 10, 1 + i), 50.0f + i});
+    }
+    const auto s = Vo2Trend::select(history, View::YEAR, day(2026, 10, 31));
+    const auto m = Vo2Trend::labMarks(s, labs);
+    ASSERT_EQ(m.count, Vo2Trend::kMaxLabMarks);
+    EXPECT_EQ(m.marks[0].entry, &labs.entries[labs.count - 1]);
+    for (std::size_t i = 1; i < m.count; ++i) {
+        EXPECT_GT(m.marks[i - 1].entry->utc, m.marks[i].entry->utc);
+    }
+}
