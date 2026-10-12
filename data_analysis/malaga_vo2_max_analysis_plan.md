@@ -52,7 +52,10 @@ Limits on what carries over to the app:
    Cross-validate grouped by person, so no one's tests are in both training and test.
 6. **Running speed vs. true VO2 max.** Compare measured peak running speed with lab
    VO2 max, as an upper bound on how well any speed-based method can do.
-7. **Signs of a poor fit.** Does curvature in the HR–speed relationship (HR
+7. **Bias vs. VO2 max level.** Does the error depend on the lab VO2 max (low values
+   overestimated, high ones underestimated)? If so, fit `lab ≈ α + β·estimate` as a
+   correction for all users, applied before any per-user lab calibration.
+8. **Signs of a poor fit.** Does curvature in the HR–speed relationship (HR
    flattening near maximum) or HR drift predict bad estimates?
 
 ## Method
