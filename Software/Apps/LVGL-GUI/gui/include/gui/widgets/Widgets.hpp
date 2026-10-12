@@ -198,8 +198,8 @@ class Vo2Card
 {
 public:
     explicit Vo2Card(lv_obj_t* parent);
-    /// @p utc 0 hides the date.
-    void set(const Vo2Result& v, std::time_t utc = 0);
+    /// @p utc 0 hides the date; @p calibrated marks the status "(cal.)".
+    void set(const Vo2Result& v, std::time_t utc = 0, bool calibrated = false);
 
 private:
     lv_obj_t* mDate    = nullptr;

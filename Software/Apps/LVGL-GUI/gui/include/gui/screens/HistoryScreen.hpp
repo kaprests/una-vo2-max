@@ -4,7 +4,8 @@
  * @brief   VO2 max history: the latest result, a trend chart and a paged
  *          list, browsed with L1/L2. On the trend page R1 cycles the view
  *          (last 20 runs, 6 months, 1 year); the list follows it. Lab test
- *          results are shown as rings and "Lab" rows. R2 returns to the main menu.
+ *          results are shown as rings and "Lab" rows; estimates are calibrated
+ *          against them (Vo2Calibration). R2 returns to the main menu.
  ******************************************************************************
  */
 
@@ -18,6 +19,7 @@
 #include "gui/screens/Screen.hpp"
 #include "gui/widgets/Widgets.hpp"
 #include "LabTests.hpp"
+#include "Vo2Calibration.hpp"
 #include "Vo2Trend.hpp"
 
 class HistoryScreen : public Screen
@@ -55,8 +57,10 @@ private:
     void fillList();
     void showPage(uint8_t page);
 
-    const Vo2History*   mHistory = nullptr;
-    const LabTests*     mLabs    = nullptr;
+    const Vo2History*       mRaw     = nullptr;
+    const LabTests*         mLabs    = nullptr;
+    Vo2Calibration::Anchors mCalibration;
+    Vo2History              mHistory;   ///< mRaw, calibrated
     Vo2Trend::View      mView    = Vo2Trend::View::RUNS;
     Vo2Trend::Selection mSelection;
     Vo2Trend::LabMarks  mLabMarks;

@@ -425,7 +425,7 @@ Vo2Card::Vo2Card(lv_obj_t* parent)
     mDetails = Theme::label(parent, F::Regular14, "", 40, 180, 160);
 }
 
-void Vo2Card::set(const Vo2Result& v, std::time_t utc)
+void Vo2Card::set(const Vo2Result& v, std::time_t utc, bool calibrated)
 {
     char buf[24];
     Theme::setHidden(mDate, utc == 0);
@@ -447,7 +447,7 @@ void Vo2Card::set(const Vo2Result& v, std::time_t utc)
     }
     Theme::setHidden(mUnit, !ok);
     Theme::setHidden(mDetails, !ok);
-    lv_label_set_text(mStatus, vo2Status(v));
+    lv_label_set_text_fmt(mStatus, calibrated && ok ? "%s (cal.)" : "%s", vo2Status(v));
     lv_obj_set_style_text_color(mStatus, Theme::rgb(vo2Color(v.confidence)), LV_PART_MAIN);
 }
 

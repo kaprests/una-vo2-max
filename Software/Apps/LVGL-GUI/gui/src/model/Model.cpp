@@ -200,6 +200,12 @@ const LabTests* Model::getLabTests() const
     return mLabTests;
 }
 
+Vo2Calibration::Anchors Model::getCalibration() const
+{
+    using namespace Vo2Calibration;
+    return mVo2History && mLabTests ? anchors(*mVo2History, *mLabTests, model(kMethod)) : Anchors{};
+}
+
 // Private
 void Model::decIdleTimer()
 {

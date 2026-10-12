@@ -140,7 +140,9 @@ void TrackSummaryScreen::setSummary(const ActivitySummary& s)
     lv_label_set_text(mAvgHr, buf);
 
     mMap->setMap(s.map);
-    mVo2->set(s.vo2);
+    const auto cal = mModel.getCalibration();
+    mVo2->set(Vo2Calibration::calibrate(s.vo2, s.utc, cal, Vo2Calibration::model(Vo2Calibration::kMethod)),
+              0, cal.count > 0);
 
     mLaps = &s.laps;
     lv_label_set_text_fmt(mLapsCount, "%lu LAPS", static_cast<unsigned long>(s.laps.size()));

@@ -23,6 +23,7 @@ add_executable(vo2max-host-tests
     Vo2History_test.cpp
     Vo2Trend_test.cpp
     LabTests_test.cpp
+    Vo2Calibration_test.cpp
     ${LIBS}/Sources/Vo2MaxEstimator.cpp
     ${LIBS}/Sources/ActivitySummarySerializer.cpp
     ${LIBS}/Sources/SettingsSerializer.cpp

@@ -54,7 +54,7 @@ void HistoryScreen::build()
         mPages[p] = Theme::container(mRoot, 0, 0, 240, 240);
     }
     mLatest    = std::make_unique<Widgets::Vo2Card>(mPages[PAGE_LATEST]);
-    mLatestLab = Theme::label(mPages[PAGE_LATEST], F::Regular14, "", 50, 198, 140);
+    mLatestLab = Theme::label(mPages[PAGE_LATEST], F::Regular14, "", 40, 198, 160);
     buildTrend(mPages[PAGE_TREND]);
     buildList(mPages[PAGE_LIST]);
 
@@ -101,11 +101,18 @@ void HistoryScreen::buildList(lv_obj_t* f)
 void HistoryScreen::onShow()
 {
     mModel.resetIdleTimer();
-    mHistory = mModel.getVo2History();
-    mLabs    = mModel.getLabTests();
-    if (!mHistory || mHistory->empty()) {
+    mRaw  = mModel.getVo2History();
+    mLabs = mModel.getLabTests();
+    if (!mRaw || mRaw->empty()) {
         ScreenManager::instance().goTo(ScreenId::Main);
         return;
+    }
+    const auto method = Vo2Calibration::model(Vo2Calibration::kMethod);
+    mCalibration = mModel.getCalibration();
+    mHistory     = *mRaw;
+    for (std::size_t i = 0; i < mHistory.count; ++i) {
+        Vo2History::Entry& e = mHistory.entries[i];
+        e.result = Vo2Calibration::calibrate(e.result, e.utc, mCalibration, method);
     }
     setLatest();
     setView(View::RUNS);
@@ -114,14 +121,24 @@ void HistoryScreen::onShow()
 
 void HistoryScreen::setLatest()
 {
-    const Vo2History::Entry& latest = mHistory->latest();
-    mLatest->set(latest.result, latest.utc);
+    const Vo2History::Entry& latest     = mHistory.latest();
+    const bool               calibrated = mCalibration.count > 0;
+    mLatest->set(latest.result, latest.utc, calibrated);
 
     const bool hasLab = mLabs && !mLabs->empty();
     Theme::setHidden(mLatestLab, !hasLab);
-    if (hasLab) {
+    if (!hasLab) {
+        return;
+    }
+    char value[12];
+    if (calibrated) {
+        Fmt::fixed(value, sizeof(value), mRaw->latest().result.vo2max, 1);
+        lv_label_set_text_fmt(mLatestLab, "Raw %s  %u lab test%s", value,
+                              static_cast<unsigned>(mCalibration.count), mCalibration.count > 1 ? "s" : "");
+    } else if (mCalibration.rejected > 0) {
+        lv_label_set_text(mLatestLab, "Calibration rejected");
+    } else {
         const float lab = mLabs->entries[mLabs->count - 1].vo2max;
-        char value[12];
         char delta[12];
         Fmt::fixed(value, sizeof(value), lab, 1);
         Fmt::delta(delta, sizeof(delta), latest.result.vo2max - lab, 1);
@@ -132,7 +149,7 @@ void HistoryScreen::setLatest()
 void HistoryScreen::setView(View view)
 {
     mView      = view;
-    mSelection = Vo2Trend::select(*mHistory, view, mModel.getLocalTime());
+    mSelection = Vo2Trend::select(mHistory, view, mModel.getLocalTime());
 
     mListCount = 0;
     for (std::size_t i = 0; i < mSelection.count; ++i) {

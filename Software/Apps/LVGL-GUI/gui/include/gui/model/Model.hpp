@@ -27,6 +27,7 @@
 #include "Settings.hpp"
 #include "ActivitySummary.hpp"
 #include "Vo2History.hpp"
+#include "Vo2Calibration.hpp"
 #include "Track.hpp"
 #include "AppMenu.hpp"
 
@@ -118,6 +119,8 @@ public:
     const ActivitySummary& getTrackSummary() const;
     const Vo2History* getVo2History() const;
     const LabTests*   getLabTests() const;
+    /// Anchors from the current history and lab tests (empty if either is missing).
+    Vo2Calibration::Anchors getCalibration() const;
 
 private:
     // Fields required for GUI <-> Service communication
