@@ -51,19 +51,23 @@ void MenuSettingsScreen::onKey(uint8_t code)
     switch (code) {
         case Btn::L1: mMenu->prev(); break;
         case Btn::L2: mMenu->next(); break;
-        case Btn::R1:
-            if (mMenu->selected() == Menu::ID_ALERTS) {
-                ScreenManager::instance().goTo(ScreenId::MenuAlerts);
-            } else if (mMenu->selected() == Menu::ID_RESET_CALIBRATION) {
+        // Reset starts its hold-to-confirm the moment R1 goes down, as on the
+        // action menu; the countdown screen runs while R1 stays held.
+        case Btn::R1_PRESS:
+            if (mMenu->selected() == Menu::ID_RESET_CALIBRATION) {
                 const LabTests* labs = mModel.getLabTests();
                 if (labs && labs->activeCount() > 0) {
-                    // Hold-to-confirm starts on the press, as on the action menu.
                     mModel.setHoldConfirmMode(Model::HoldConfirmMode::ResetCalibration);
                     ScreenManager::instance().goTo(ScreenId::TrackHoldConfirm);
                 } else {
                     ScreenManager::instance().goTo(ScreenId::CalibrationResetNone);
                 }
-            } else {
+            }
+            break;
+        case Btn::R1:
+            if (mMenu->selected() == Menu::ID_ALERTS) {
+                ScreenManager::instance().goTo(ScreenId::MenuAlerts);
+            } else if (mMenu->selected() == Menu::ID_SHOW_GUIDE) {
                 Settings s = mModel.getSettings();
                 s.showGuide = !s.showGuide;
                 mModel.saveSettings(s);
