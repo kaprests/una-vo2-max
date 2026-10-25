@@ -9,7 +9,10 @@ manifest=Output/app-manifest.json
 tools="$UNA_SDK/Utilities/Scripts/app_packer"
 
 [ -f "$manifest" ] || { echo "Missing $manifest (see https://www.developers.unawatch.com/latest/app-config-json.html)." >&2; exit 1; }
-[ -z "$(git status --porcelain)" ] || { echo "Uncommitted changes; commit or stash first." >&2; exit 1; }
+# Untracked notes and docs are fine; tracked changes and new build inputs are not.
+git diff --quiet HEAD -- || { echo "Uncommitted changes; commit or stash first." >&2; exit 1; }
+untracked=$(git ls-files --others --exclude-standard -- Software Resources Output)
+[ -z "$untracked" ] || { printf 'Untracked build inputs; commit or remove them first:\n%s\n' "$untracked" >&2; exit 1; }
 # The SDK's una-version.sh reads apps-vX.Y.Z tags (see una-app.cmake).
 tag=$(git describe --exact-match --tags --match 'apps-v*' HEAD 2>/dev/null) ||
   { echo "HEAD is not on an apps-v* tag (e.g. git tag apps-v0.1.0)." >&2; exit 1; }
