@@ -390,9 +390,9 @@ const char* vo2Status(const Vo2Result& v)
     using C = Vo2Result::Confidence;
     using R = Vo2Result::Reason;
     switch (v.confidence) {
-        case C::HIGH:   return "High";
-        case C::MEDIUM: return "Medium";
-        case C::LOW:    return "Low";
+        case C::HIGH:   return "High confidence";
+        case C::MEDIUM: return "Medium confidence";
+        case C::LOW:    return "Low confidence";
         case C::NONE:   break;
     }
     switch (v.reason) {
@@ -445,9 +445,10 @@ void Vo2Card::set(const Vo2Result& v, std::time_t utc, bool calibrated)
     } else {
         lv_label_set_text(mValue, Strings::kNoValue);
     }
+    lv_label_set_text(mUnit, calibrated ? "ml/kg/min (calibrated)" : "ml/kg/min");
     Theme::setHidden(mUnit, !ok);
     Theme::setHidden(mDetails, !ok);
-    lv_label_set_text_fmt(mStatus, calibrated && ok ? "%s (cal.)" : "%s", vo2Status(v));
+    lv_label_set_text(mStatus, vo2Status(v));
     lv_obj_set_style_text_color(mStatus, Theme::rgb(vo2Color(v.confidence)), LV_PART_MAIN);
 }
 
