@@ -25,9 +25,6 @@ float acsmVo2(float speedMps)
 
 void Vo2MaxEstimator::LinearFit::add(double x, double y)
 {
-    const auto fy = static_cast<float>(y);
-    yMin = n ? std::min(yMin, fy) : fy;
-    yMax = n ? std::max(yMax, fy) : fy;
     ++n;
     sx += x;  sy += y;
     sxx += x * x;  sxy += x * y;  syy += y * y;
@@ -56,12 +53,15 @@ void Vo2MaxEstimator::breakStretch()
     mGapSec      = 0;
 }
 
-bool Vo2MaxEstimator::usable(const Sample& s) const
+bool Vo2MaxEstimator::hrUsable(const Sample& s) const
+{
+    return s.hrBpm >= mConfig.minHrBpm && s.hrTrust >= mConfig.minHrTrust && s.hrTrust <= kMaxHrTrust;
+}
+
+bool Vo2MaxEstimator::speedUsable(const Sample& s) const
 {
     const Config& c = mConfig;
     return s.speedMps >= c.minSpeedMps && s.speedMps <= c.maxSpeedMps
-        && s.hrBpm >= c.minHrBpm
-        && s.hrTrust >= c.minHrTrust && s.hrTrust <= kMaxHrTrust
         && (!s.gradeValid || std::fabs(s.gradePct) <= c.maxGradePct);
 }
 
@@ -81,7 +81,11 @@ bool Vo2MaxEstimator::windowSteady(float newest) const
 
 void Vo2MaxEstimator::addSample(const Sample& s)
 {
-    if (!usable(s)) {
+    using State = Vo2Progress::State;
+
+    const bool hrOk = hrUsable(s);
+    if (!hrOk || !speedUsable(s)) {
+        mState = hrOk ? State::UNUSABLE : State::NO_HR;
         if (++mGapSec > mConfig.maxGapSec) {
             breakStretch();
         }
@@ -93,16 +97,34 @@ void Vo2MaxEstimator::addSample(const Sample& s)
     mWindowHead  = (mWindowHead + 1) % kWindowSec;
     mWindowCount = std::min(mWindowCount + 1, kWindowSec);
     if (mWindowCount < kWindowSec) {
+        mState = State::SETTLING;
         return;
     }
 
     if (!windowSteady(s.speedMps)) {
         mSteadySec = 0;
+        mState     = State::UNSTEADY;
     } else if (mSteadySec < mConfig.settleSec) {
         ++mSteadySec;
+        mState = State::SETTLING;
     } else {
         mFit.add(s.speedMps, s.hrBpm);
+        const int bin = static_cast<int>((s.hrBpm - kBinMinBpm) / kBinBpm);
+        ++mHrBins[std::clamp(bin, 0, static_cast<int>(kBins) - 1)];
+        mState = State::COUNTING;
     }
+}
+
+Vo2MaxEstimator::Band Vo2MaxEstimator::hrBand() const
+{
+    const auto full = [this](uint16_t sec) { return sec >= mConfig.minBinSec; };
+    const auto low  = std::find_if(mHrBins.begin(), mHrBins.end(), full);
+    if (low == mHrBins.end()) {
+        return {};
+    }
+    const auto high   = std::find_if(mHrBins.rbegin(), mHrBins.rend(), full);
+    const auto centre = [](std::ptrdiff_t bin) { return kBinMinBpm + (bin + 0.5f) * kBinBpm; };
+    return {centre(low - mHrBins.begin()), centre(mHrBins.rend() - high - 1)};
 }
 
 Vo2Result Vo2MaxEstimator::result(float maxHrBpm) const
@@ -118,7 +140,8 @@ Vo2Result Vo2MaxEstimator::result(float maxHrBpm) const
     if (maxHrBpm < mConfig.minMaxHr) {
         return fail(Reason::NO_MAX_HR);
     }
-    r.hrRangeFrac = (mFit.yMax - mFit.yMin) / maxHrBpm;
+    const Band band = hrBand();
+    r.hrRangeFrac   = (band.high - band.low) / maxHrBpm;
 
     if (mFit.n < std::max<uint32_t>(mConfig.minimum.steadySec, 2)) {
         return fail(Reason::TOO_SHORT);
@@ -150,4 +173,23 @@ Vo2Result Vo2MaxEstimator::result(float maxHrBpm) const
                  : meets(mConfig.medium) ? Confidence::MEDIUM
                                          : Confidence::LOW;
     return r;
+}
+
+Vo2Progress Vo2MaxEstimator::progress(float maxHrBpm) const
+{
+    const Vo2Result   r      = result(maxHrBpm);
+    const Band        band   = hrBand();
+    const bool        fits   = mFit.n > 1 && mFit.varX() > 0.0 && mFit.varY() > 0.0;
+    const std::size_t settle = mWindowCount < kWindowSec ? kWindowSec - mWindowCount + mConfig.settleSec
+                                                         : mConfig.settleSec - mSteadySec;
+
+    Vo2Progress p;
+    p.state      = maxHrBpm < mConfig.minMaxHr ? Vo2Progress::State::NO_MAX_HR : mState;
+    p.confidence = r.confidence;
+    p.settleSec  = static_cast<uint8_t>(std::min<std::size_t>(settle, std::numeric_limits<uint8_t>::max()));
+    p.hrLow      = static_cast<uint8_t>(std::lround(band.low));
+    p.hrHigh     = static_cast<uint8_t>(std::lround(band.high));
+    p.steadySec  = r.steadySec;
+    p.r2         = fits ? static_cast<float>(mFit.r2()) : 0.0f;
+    return p;
 }

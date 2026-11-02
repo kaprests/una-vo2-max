@@ -122,6 +122,40 @@ TEST(Vo2MaxEstimator, SinglePaceHasTooLittleHrRange)
     EXPECT_EQ(est.result(kMaxHr).reason, Vo2Result::Reason::LOW_HR_RANGE);
 }
 
+TEST(Vo2MaxEstimator, BriefHrSpikeDoesNotWidenRange)
+{
+    Est est;
+    runPaces(est, {2.8f, 3.4f}, 600);
+    const float range = est.result(kMaxHr).hrRangeFrac;
+    for (int i = 0; i < 10; ++i) {
+        est.addSample(sample(3.4f, 185.0f));
+    }
+    EXPECT_NEAR(range, 15.0f / kMaxHr, 1e-4f);
+    EXPECT_FLOAT_EQ(est.result(kMaxHr).hrRangeFrac, range);
+}
+
+TEST(Vo2MaxEstimator, ProgressTracksCollection)
+{
+    using State = Vo2Progress::State;
+    Est est;
+    EXPECT_EQ(est.progress(0.0f).state, State::NO_MAX_HR);
+
+    runPaces(est, {3.0f}, 10);
+    EXPECT_EQ(est.progress(kMaxHr).state, State::SETTLING);
+    EXPECT_EQ(est.progress(kMaxHr).settleSec, kLeadIn + 1 - 10);
+
+    runPaces(est, {3.0f}, 400);
+    const auto p = est.progress(kMaxHr);
+    EXPECT_EQ(p.state, State::COUNTING);
+    EXPECT_EQ(p.steadySec, 410 - kLeadIn);
+    EXPECT_EQ(p.hrLow, p.hrHigh);
+
+    est.addSample(sample(3.0f, 0.0f));
+    EXPECT_EQ(est.progress(kMaxHr).state, State::NO_HR);
+    est.addSample(sample(5.0f, kA + kB * 5.0f));
+    EXPECT_EQ(est.progress(kMaxHr).state, State::UNSTEADY);
+}
+
 TEST(Vo2MaxEstimator, HillsAreIgnored)
 {
     Est est;
