@@ -56,11 +56,11 @@ void tipText(char* buf, std::size_t size, const Vo2Guidance& g, const Vo2Progres
         case Tip::NO_HR:       std::snprintf(buf, size, "Weak HR signal"); break;
         case Tip::FLAT_GROUND: std::snprintf(buf, size, "Run steady on\nflat ground"); break;
         case Tip::HOLD_STEADY: std::snprintf(buf, size, "Hold a steady pace"); break;
-        case Tip::SETTLING:    std::snprintf(buf, size, "Hold pace\n%u s to count", p.settleSec); break;
-        case Tip::GO_FASTER:   std::snprintf(buf, size, "Faster: HR %u\nfor 3 min", g.targetHr); break;
-        case Tip::GO_EASIER:   std::snprintf(buf, size, "Easier: HR %u\nfor 3 min", g.targetHr); break;
+        case Tip::SETTLING:    std::snprintf(buf, size, "Keep pace\nHR settling %u s", p.settleSec); break;
+        case Tip::GO_FASTER:   std::snprintf(buf, size, "Faster: HR %u\nhold for 3 min", g.targetHr); break;
+        case Tip::GO_EASIER:   std::snprintf(buf, size, "Easier: HR %u\nhold for 3 min", g.targetHr); break;
         case Tip::HR_OFF_PACE: std::snprintf(buf, size, "HR not following\npace"); break;
-        case Tip::KEEP_GOING:  std::snprintf(buf, size, "Keep steady"); break;
+        case Tip::KEEP_GOING:  std::snprintf(buf, size, "Keep steady\nfor longer"); break;
         case Tip::DONE:        std::snprintf(buf, size, "Good data"); break;
     }
 }
