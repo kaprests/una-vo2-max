@@ -17,7 +17,9 @@ Heart rate rises roughly linearly with running speed, up to max heart rate. The 
 | Medium | ≥ 10 min    | ≥ 15 %               | ≥ 0.6  |
 | High   | ≥ 20 min    | ≥ 20 %               | ≥ 0.8  |
 
-Runs below Low give no result. A wider heart rate range means less extrapolation.
+Runs below Low give no result. A wider heart rate range means less extrapolation. The range only counts heart rates held for at least 20 s (in 5 bpm steps), so brief spikes don't widen it.
+
+The run's data face shows progress live and suggests the heart rate to hold next: faster first (up to 90 % of max HR), then easier, until the range reaches 20 %.
 
 ### Assumptions
 
