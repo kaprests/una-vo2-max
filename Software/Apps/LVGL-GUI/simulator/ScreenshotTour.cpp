@@ -48,6 +48,7 @@ constexpr Step kFull[] = {
     {Btn::R1, 1000, "04-guide"},            // first Start shows the guide
     {Btn::R1, 8000, "05-run"},              // wait for pace and HR
     {Btn::L2, 1000, "06-run-hr"},
+    {Btn::L2, 1000, "14-run-vo2"},
     {Btn::R1, 1000, "07-pause"},
 };
 

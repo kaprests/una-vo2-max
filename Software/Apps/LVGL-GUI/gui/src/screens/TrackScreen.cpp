@@ -12,7 +12,11 @@
 #include "gui/Format.hpp"
 #include "gui/Strings.hpp"
 
+#include <algorithm>
+#include <cstdio>
 #include <cstring>
+
+#include "Vo2Guidance.hpp"
 
 #include "SDK/Utils/ClockTime.hpp"
 
@@ -22,6 +26,12 @@ using F = Theme::Font;
 namespace
 {
 constexpr uint16_t kFaceCount = App::MenuNav::TrackView::ID_COUNT;
+
+// VO2 data face: the steady-time bar spans the High threshold.
+constexpr int32_t kSteadyX = 50;
+constexpr int32_t kSteadyY = 136;
+constexpr int32_t kSteadyW = 140;
+constexpr int32_t kSteadyH = 6;
 
 // Status face clock geometry (TrackFaceStatus.hpp).
 constexpr int32_t kTimeY       = 63;
@@ -35,6 +45,23 @@ const char* hrSourceText(uint8_t source)
         case 1:  return "OPT";
         case 2:  return "EXT";
         default: return "";
+    }
+}
+
+void tipText(char* buf, std::size_t size, const Vo2Guidance& g, const Vo2Progress& p)
+{
+    using Tip = Vo2Guidance::Tip;
+    switch (g.tip) {
+        case Tip::SET_MAX_HR:  std::snprintf(buf, size, "%s", Strings::kNoMaxHr); break;
+        case Tip::NO_HR:       std::snprintf(buf, size, "Weak HR signal"); break;
+        case Tip::FLAT_GROUND: std::snprintf(buf, size, "Run steady on\nflat ground"); break;
+        case Tip::HOLD_STEADY: std::snprintf(buf, size, "Hold a steady pace"); break;
+        case Tip::SETTLING:    std::snprintf(buf, size, "Hold pace\n%u s to count", p.settleSec); break;
+        case Tip::GO_FASTER:   std::snprintf(buf, size, "Faster: HR %u\nfor 3 min", g.targetHr); break;
+        case Tip::GO_EASIER:   std::snprintf(buf, size, "Easier: HR %u\nfor 3 min", g.targetHr); break;
+        case Tip::HR_OFF_PACE: std::snprintf(buf, size, "HR not following\npace"); break;
+        case Tip::KEEP_GOING:  std::snprintf(buf, size, "Keep steady"); break;
+        case Tip::DONE:        std::snprintf(buf, size, "Good data"); break;
     }
 }
 
@@ -61,6 +88,7 @@ void TrackScreen::build()
                   Widgets::Buttons::NONE, Widgets::Buttons::AMBER);
 
     buildFaceStatus();
+    buildFaceVo2();
     buildFaceLap();
     buildFaceTotal();
 }
@@ -97,6 +125,21 @@ void TrackScreen::buildFaceLap()
     Theme::hline(f, 35, 159, 170);
     mLapTimerValue = Theme::label(f, F::SemiBold35, "0:00:00", 35, 162, 170);
     Theme::label(f, F::Italic18, "Lap Time", 75, 204, 91);
+}
+
+void TrackScreen::buildFaceVo2()
+{
+    lv_obj_t* f = mFaceVo2 = Theme::container(mRoot, 0, 0, 240, 240);
+    mVo2Level   = Theme::label(f, F::Medium18, "", 20, 30, 200);
+    mHrStrip    = std::make_unique<Widgets::HrStrip>(f, 30, 72, 180);
+    mSteadyText = Theme::label(f, F::Regular16, "", 20, 110, 200);
+    Theme::box(f, kSteadyX, kSteadyY, kSteadyW, kSteadyH, Color::GRAY_DARK, LV_RADIUS_CIRCLE);
+    mSteadyFill = Theme::box(f, kSteadyX, kSteadyY, 0, kSteadyH, Color::TEAL, LV_RADIUS_CIRCLE);
+    for (const Vo2Level& level : {kVo2Low, kVo2Medium}) {
+        Theme::box(f, kSteadyX + kSteadyW * level.steadySec / kVo2High.steadySec, kSteadyY - 3, 2, kSteadyH + 6,
+                   Color::WHITE);
+    }
+    mVo2Tip = Theme::label(f, F::Medium18, "", 20, 156, 200);
 }
 
 void TrackScreen::buildFaceStatus()
@@ -148,7 +191,8 @@ void TrackScreen::showFace(uint16_t id)
     mFaceId = id;
     setHidden(mFaceTotal,     id != FaceId::ID_TRACK1);
     setHidden(mFaceLap,       id != FaceId::ID_TRACK2);
-    setHidden(mFaceStatus,    id != FaceId::ID_TRACK3);
+    setHidden(mFaceVo2,       id != FaceId::ID_TRACK3);
+    setHidden(mFaceStatus,    id != FaceId::ID_TRACK4);
     mIndicator->setActive(id);
 }
 
@@ -176,7 +220,7 @@ void TrackScreen::onKey(uint8_t code)
 
 void TrackScreen::onTrackData(const Track::Data& data)
 {
-    char buf[16];
+    char buf[32];
 
     // Totals face
     Fmt::pace(buf, sizeof(buf), Fmt::paceUnits(data.pace, mIsImperial));
@@ -201,6 +245,19 @@ void TrackScreen::onTrackData(const Track::Data& data)
     mHrSource = data.hrSource;
     lv_label_set_text(mHrSourceLabel, hrSourceText(mHrSource));
     updateHrIcon();
+
+    // VO2 data face
+    const Vo2Progress& p         = data.vo2;
+    const float        maxHr     = mModel.getMaxHrBpm();
+    const Vo2Guidance  g         = vo2Guidance(p, maxHr);
+    const bool         estimated = p.confidence != Vo2Result::Confidence::NONE;
+    lv_label_set_text(mVo2Level, estimated ? Widgets::vo2Status(Vo2Result{p.confidence}) : "No estimate yet");
+    lv_obj_set_style_text_color(mVo2Level, Theme::rgb(Widgets::vo2Color(p.confidence)), LV_PART_MAIN);
+    mHrStrip->set(maxHr, p.hrLow, p.hrHigh, g.targetHr, data.hr);
+    lv_label_set_text_fmt(mSteadyText, "Steady %u min", p.steadySec / 60u);
+    lv_obj_set_width(mSteadyFill, kSteadyW * std::min<int32_t>(p.steadySec, kVo2High.steadySec) / kVo2High.steadySec);
+    tipText(buf, sizeof(buf), g, p);
+    lv_label_set_text(mVo2Tip, buf);
 }
 
 void TrackScreen::onBatteryLevel(uint8_t level)

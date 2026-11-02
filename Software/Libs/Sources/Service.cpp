@@ -927,6 +927,8 @@ void Service::processTrack()
     // Altitude, m
     mTrackData.elevation = mAltitudeCounter.getCurrent();
 
+    mTrackData.vo2 = mVo2Estimator.progress(mMaxHrBpm);
+
     // Update GUI
     SDK::send_msg<CustomMessage::TrackDataUpd>(mKernel, mTrackData);
 

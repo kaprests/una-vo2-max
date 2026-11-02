@@ -1,7 +1,7 @@
 /**
  ******************************************************************************
  * @file    TrackScreen.hpp
- * @brief   The live activity screen: the totals, lap and status faces.
+ * @brief   The live activity screen: the totals, lap, VO2 data and status faces.
  *          L1/L2 page faces, R1 opens the action menu, R2 marks a lap.
  *
  * Port of the Run app's TrackView/TrackPresenter and its TrackFace* containers.
@@ -42,6 +42,7 @@ private:
 
     void buildFaceTotal();
     void buildFaceLap();
+    void buildFaceVo2();
     void buildFaceStatus();
     void showFace(uint16_t id);
     void setTime(uint8_t h, uint8_t m);
@@ -50,6 +51,7 @@ private:
     // Face containers (240 x 240, one visible at a time)
     lv_obj_t* mFaceTotal     = nullptr;
     lv_obj_t* mFaceLap       = nullptr;
+    lv_obj_t* mFaceVo2       = nullptr;
     lv_obj_t* mFaceStatus    = nullptr;
 
     // Totals face
@@ -65,6 +67,13 @@ private:
     lv_obj_t* mLapDistValue  = nullptr;
     lv_obj_t* mLapTimerValue = nullptr;
     std::unique_ptr<Widgets::HeartRateZone> mHrZone;
+
+    // VO2 data face
+    lv_obj_t* mVo2Level   = nullptr;
+    lv_obj_t* mSteadyText = nullptr;
+    lv_obj_t* mSteadyFill = nullptr;
+    lv_obj_t* mVo2Tip     = nullptr;
+    std::unique_ptr<Widgets::HrStrip> mHrStrip;
 
     // Status face
     lv_obj_t* mDayTime  = nullptr;

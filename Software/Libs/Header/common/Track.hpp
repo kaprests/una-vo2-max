@@ -15,6 +15,8 @@
 #include <cstdint>
 #include <ctime>
 
+#include "Vo2Progress.hpp"
+
 namespace Track
 {
 
@@ -75,6 +77,8 @@ struct Data {
 
     // Elevation, m (current altitude from barometer)
     float elevation    = 0.0f;
+
+    Vo2Progress vo2;
 };
 
 } // namespace Track

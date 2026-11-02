@@ -99,6 +99,29 @@ private:
 };
 
 // -----------------------------------------------------------------------------
+/// HR scale from 60 % to 100 % of max HR: the counted range (teal), the next
+/// target (outlined) and the current HR (white tick).
+class HrStrip
+{
+public:
+    HrStrip(lv_obj_t* parent, int32_t x, int32_t y, int32_t w);
+    void set(float maxHr, uint8_t low, uint8_t high, uint8_t target, float hr);
+
+private:
+    int32_t xOf(float bpm) const;
+
+    int32_t   mX   = 0;
+    int32_t   mW   = 0;
+    float     mMin = 0.0f;
+    float     mMax = 0.0f;
+    lv_obj_t* mRange  = nullptr;
+    lv_obj_t* mTarget = nullptr;
+    lv_obj_t* mCursor = nullptr;
+    lv_obj_t* mMinLabel = nullptr;
+    lv_obj_t* mMaxLabel = nullptr;
+};
+
+// -----------------------------------------------------------------------------
 /// Grey dome at the bottom with a pause glyph and the paused session time.
 class PauseIndicator
 {

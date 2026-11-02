@@ -80,7 +80,7 @@ struct Root {
 // TrackView is the activity destination, not nested inside Root.
 // TrackAction is always an overlay of TrackView, so it lives inside it.
 struct TrackView {
-    enum Id { ID_TRACK1 = 0, ID_TRACK2, ID_TRACK3,
+    enum Id { ID_TRACK1 = 0, ID_TRACK2, ID_TRACK3, ID_TRACK4,
               ID_COUNT, ID_DEFAULT = ID_TRACK1 };
 
     struct Action {

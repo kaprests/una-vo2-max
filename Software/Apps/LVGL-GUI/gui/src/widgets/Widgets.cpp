@@ -7,6 +7,7 @@
 
 #include "gui/widgets/Widgets.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include "gui/Assets.hpp"
 #include "gui/Format.hpp"
@@ -148,6 +149,60 @@ void HeartRateZone::setHR(float bpm, const uint8_t* thresholds, uint8_t threshol
         --active;
     }
     showZone(active);
+}
+
+// --- HrStrip ---------------------------------------------------------------
+
+namespace
+{
+constexpr int32_t kStripH   = 8;
+constexpr float   kStripMin = 0.6f;  ///< Of max HR, at the left end.
+constexpr float   kTargetHalfBpm = 3.0f;
+} // namespace
+
+HrStrip::HrStrip(lv_obj_t* parent, int32_t x, int32_t y, int32_t w)
+    : mX(x)
+    , mW(w)
+{
+    Theme::box(parent, x, y, w, kStripH, Color::GRAY_DARK, LV_RADIUS_CIRCLE);
+    mRange  = Theme::box(parent, x, y, 0, kStripH, Color::TEAL, LV_RADIUS_CIRCLE);
+    mTarget = Theme::box(parent, x, y - 4, 0, kStripH + 8, Color::WHITE, 2);
+    lv_obj_set_style_bg_opa(mTarget, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_style_border_width(mTarget, 2, LV_PART_MAIN);
+    lv_obj_set_style_border_color(mTarget, Theme::rgb(Color::WHITE), LV_PART_MAIN);
+    mCursor   = Theme::box(parent, x, y - 6, 3, kStripH + 12, Color::WHITE);
+    mMinLabel = Theme::label(parent, Theme::Font::Regular14, "", x - 10, y + 12, 40, LV_TEXT_ALIGN_LEFT);
+    mMaxLabel = Theme::label(parent, Theme::Font::Regular14, "", x + w - 30, y + 12, 40, LV_TEXT_ALIGN_RIGHT);
+}
+
+int32_t HrStrip::xOf(float bpm) const
+{
+    if (mMax <= mMin) {
+        return mX;
+    }
+    const float f = std::clamp((bpm - mMin) / (mMax - mMin), 0.0f, 1.0f);
+    return mX + static_cast<int32_t>(std::lround(f * mW));
+}
+
+void HrStrip::set(float maxHr, uint8_t low, uint8_t high, uint8_t target, float hr)
+{
+    mMin = kStripMin * maxHr;
+    mMax = maxHr;
+    lv_label_set_text_fmt(mMinLabel, "%d", static_cast<int>(mMin));
+    lv_label_set_text_fmt(mMaxLabel, "%d", static_cast<int>(mMax));
+    Theme::setHidden(mMinLabel, maxHr <= 0.0f);
+    Theme::setHidden(mMaxLabel, maxHr <= 0.0f);
+
+    Theme::setHidden(mRange, high == 0);
+    lv_obj_set_x(mRange, xOf(low));
+    lv_obj_set_width(mRange, std::max(xOf(high) - xOf(low), kStripH));
+
+    Theme::setHidden(mTarget, target == 0);
+    lv_obj_set_x(mTarget, xOf(target - kTargetHalfBpm));
+    lv_obj_set_width(mTarget, xOf(target + kTargetHalfBpm) - xOf(target - kTargetHalfBpm));
+
+    Theme::setHidden(mCursor, hr <= 0.0f || maxHr <= 0.0f);
+    lv_obj_set_x(mCursor, xOf(hr) - 1);
 }
 
 // --- PauseIndicator --------------------------------------------------------
