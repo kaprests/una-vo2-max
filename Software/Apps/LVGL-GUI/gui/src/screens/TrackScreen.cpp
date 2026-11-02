@@ -28,6 +28,16 @@ constexpr int32_t kTimeY       = 63;
 constexpr int32_t kMeridiemY   = 105;
 constexpr int32_t kMeridiemGap = 5;
 
+/// SDK HeartRateEx::Source: 0 none, 1 optical, 2 external.
+const char* hrSourceText(uint8_t source)
+{
+    switch (source) {
+        case 1:  return "OPT";
+        case 2:  return "EXT";
+        default: return "";
+    }
+}
+
 void setHidden(lv_obj_t* obj, bool hidden)
 {
     if (hidden) {
@@ -75,6 +85,7 @@ void TrackScreen::buildFaceLap()
     lv_obj_t* f = mFaceLap = Theme::container(mRoot, 0, 0, 240, 240);
     mHrZone  = std::make_unique<Widgets::HeartRateZone>(f, 15, 4);
     mHrValue = Theme::label(f, F::SemiBold40, Strings::kNoValue, 75, 29, 90);
+    mHrSourceLabel = Theme::label(f, F::Regular14, "", 160, 32, 45, LV_TEXT_ALIGN_LEFT);
     Theme::label(f, F::Regular18, "HR", 160, 50, 45, LV_TEXT_ALIGN_LEFT);
     Theme::hline(f, 35, 79, 170);
     Theme::label(f, F::Italic18, "Lap Pace", 20, 88, 88);
@@ -188,6 +199,7 @@ void TrackScreen::onTrackData(const Track::Data& data)
     mHrZone->setHR(data.hr < App::Display::kMinHR ? 0.0f : data.hr, mHrThresholds, mHrThresholdCount);
 
     mHrSource = data.hrSource;
+    lv_label_set_text(mHrSourceLabel, hrSourceText(mHrSource));
     updateHrIcon();
 }
 

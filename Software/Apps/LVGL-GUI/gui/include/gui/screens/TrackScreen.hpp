@@ -60,6 +60,7 @@ private:
 
     // Lap face
     lv_obj_t* mHrValue       = nullptr;
+    lv_obj_t* mHrSourceLabel = nullptr;
     lv_obj_t* mLapPaceValue  = nullptr;
     lv_obj_t* mLapDistValue  = nullptr;
     lv_obj_t* mLapTimerValue = nullptr;
