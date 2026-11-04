@@ -130,7 +130,8 @@ void TrackScreen::buildFaceLap()
 void TrackScreen::buildFaceVo2()
 {
     lv_obj_t* f = mFaceVo2 = Theme::container(mRoot, 0, 0, 240, 240);
-    mVo2Level   = Theme::label(f, F::Medium18, "", 20, 30, 200);
+    Theme::label(f, F::Italic18, "GUIDE", 60, 11, 120);
+    mVo2Level   = Theme::label(f, F::Medium18, "", 20, 34, 200);
     mHrStrip    = std::make_unique<Widgets::HrStrip>(f, 30, 72, 180);
     mSteadyText = Theme::label(f, F::Regular16, "", 20, 110, 200);
     Theme::box(f, kSteadyX, kSteadyY, kSteadyW, kSteadyH, Color::GRAY_DARK, LV_RADIUS_CIRCLE);

@@ -9,7 +9,21 @@
 #include "gui/screens/ScreenManager.hpp"
 #include "gui/theme/Theme.hpp"
 
+#include <iterator>
+
 using B = Widgets::Buttons;
+
+namespace
+{
+constexpr const char* kText[] = {
+    "Set max HR in\nthe UNA app.\nRun on flat ground.\nWarm up 10 min easy.",
+    "Hold each pace\n3+ min, then\nchange it. Cover\neasy, moderate\nand hard.",
+    "While running,\nnavigate to the\nGUIDE screen for\nlive guidance.",
+    "On GUIDE:\nwhite tick = live HR\nteal = range so far\nbox = HR to aim for",
+    "At first only the\nwhite tick shows.\nTeal and box appear\nonce data starts\ncounting.",
+    "After a pace\nchange, HR needs\n1-2 min to settle\nbefore data counts.",
+};
+} // namespace
 
 GuideScreen::GuideScreen(Model& model, bool beforeRun)
     : Screen(model)
@@ -19,12 +33,26 @@ GuideScreen::GuideScreen(Model& model, bool beforeRun)
 
 void GuideScreen::build()
 {
-    mTitle   = std::make_unique<Widgets::Title>(mRoot, "GUIDE");
-    mButtons = std::make_unique<Widgets::Buttons>(mRoot);
+    static_assert(std::size(kText) == kPages);
+    mTitle     = std::make_unique<Widgets::Title>(mRoot, "ABOUT");
+    mButtons   = std::make_unique<Widgets::Buttons>(mRoot);
     mButtons->set(B::NONE, B::NONE, mBeforeRun ? B::AMBER : B::NONE, B::WHITE);
-    Theme::label(mRoot, Theme::Font::Regular18,
-                 "Run on flat ground.\nWarm up 10 min easy.\nThen 5+ min easy\nand 5+ min at\nmoderate pace.",
-                 20, 66, 200);
+    mIndicator = std::make_unique<Widgets::ScrollIndicator>(mRoot, Widgets::ScrollIndicator::kSmall);
+    mIndicator->setCount(kPages);
+    for (uint8_t p = 0; p < kPages; ++p) {
+        mPages[p] = Theme::container(mRoot, 0, 0, 240, 240);
+        Theme::label(mPages[p], Theme::Font::Regular18, kText[p], 20, 56, 200);
+    }
+    showPage(0);
+}
+
+void GuideScreen::showPage(uint8_t page)
+{
+    mPage = page;
+    for (uint8_t p = 0; p < kPages; ++p) {
+        Theme::setHidden(mPages[p], p != page);
+    }
+    mIndicator->setActive(page);
 }
 
 void GuideScreen::onShow()
@@ -40,7 +68,11 @@ void GuideScreen::onShow()
 void GuideScreen::onKey(uint8_t code)
 {
     namespace Btn = SDK::GUI::Button;
-    if (code == Btn::R1 && mBeforeRun) {
+    if (code == Btn::L1) {
+        showPage((mPage + kPages - 1) % kPages);
+    } else if (code == Btn::L2) {
+        showPage((mPage + 1) % kPages);
+    } else if (code == Btn::R1 && mBeforeRun) {
         ScreenManager::instance().startRun();
     } else if (code == Btn::R2) {
         ScreenManager::instance().goTo(ScreenId::Main);
