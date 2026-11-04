@@ -50,6 +50,11 @@ target_include_directories(vo2max-host-tests PRIVATE
 target_compile_options(vo2max-host-tests PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic>)
 target_link_libraries(vo2max-host-tests PRIVATE GTest::gtest_main)
 
+# Replays a recorded run (mise run replay).
+add_executable(vo2-replay Vo2Replay.cpp ${LIBS}/Sources/Vo2MaxEstimator.cpp)
+target_include_directories(vo2-replay PRIVATE ${LIBS}/Header/common ${LIBS}/Header/service)
+target_compile_options(vo2-replay PRIVATE -Wall -Wextra -Wpedantic)
+
 enable_testing()
 include(GoogleTest)
 gtest_discover_tests(vo2max-host-tests)

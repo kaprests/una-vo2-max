@@ -76,6 +76,19 @@ run = "python gen_assets.py"
 description = "Regenerate the app icons in Resources/"
 run = "python tools/make_icons.py"
 
+[tasks.replay]
+description = "Replay a recorded .fit through the estimator and guidance"
+usage = '''
+arg "<fit>" help="Activity file, e.g. copied from Apps/<app>/Activity/"
+arg "<max_hr>" help="Max HR the run used"
+arg "[interval]" help="Seconds between lines" default="30"
+'''
+run = [
+  "cmake -G Ninja -S Software/Tests -B Software/Tests/build >/dev/null",
+  "cmake --build Software/Tests/build --target vo2-replay >/dev/null",
+  "python tools/fit_csv.py \"$usage_fit\" | Software/Tests/build/vo2-replay \"$usage_max_hr\" \"$usage_interval\"",
+]
+
 [tasks.test]
 description = "Build and run the host unit tests (Docs/unit-testing.md)"
 dir = "Software/Tests"
