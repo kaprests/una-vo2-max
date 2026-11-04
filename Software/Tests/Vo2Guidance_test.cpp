@@ -21,12 +21,11 @@ Vo2Progress counting(uint8_t low, uint8_t high, float r2 = 0.9f, uint16_t sec = 
 }
 } // namespace
 
-TEST(Vo2Guidance, SendsFasterUpToTheCap)
+TEST(Vo2Guidance, SendsFasterToTheCap)
 {
     const auto g = vo2Guidance(counting(125, 140), kMaxHr);
     EXPECT_EQ(g.tip, Tip::GO_FASTER);
-    EXPECT_EQ(g.targetHr, 163);
-    EXPECT_EQ(vo2Guidance(counting(145, 150), kMaxHr).targetHr, 171);
+    EXPECT_EQ(g.targetHr, 171);
 }
 
 TEST(Vo2Guidance, SendsEasierWhenTheCapIsReached)
@@ -51,7 +50,7 @@ TEST(Vo2Guidance, StateOverridesTipButKeepsTarget)
     p.state = State::SETTLING;
     const auto g = vo2Guidance(p, kMaxHr);
     EXPECT_EQ(g.tip, Tip::SETTLING);
-    EXPECT_EQ(g.targetHr, 163);
+    EXPECT_EQ(g.targetHr, 171);
 
     p.state = State::NO_MAX_HR;
     EXPECT_EQ(vo2Guidance(p, 0.0f).tip, Tip::SET_MAX_HR);

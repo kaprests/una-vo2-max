@@ -3,8 +3,8 @@
  * @file    Vo2Guidance.hpp
  * @brief   What the runner should do next to improve the estimate.
  *
- * The range of counted HR matters most, so the runner is sent faster first
- * (a shorter extrapolation to max HR), within kMaxFrac, then easier.
+ * The range of counted HR matters most. The runner is sent to kMaxFrac first,
+ * since data near max HR shortens the extrapolation, then easier.
  ******************************************************************************
  */
 
@@ -50,7 +50,7 @@ inline Vo2Guidance vo2Guidance(const Vo2Progress& p, float maxHrBpm)
         const int top    = std::min(p.hrLow + range, static_cast<int>(Vo2Guidance::kMaxFrac * maxHrBpm));
         const int bottom = std::max(p.hrHigh - range, static_cast<int>(Vo2Guidance::kMinFrac * maxHrBpm));
         if (p.hrHigh < top - Vo2Guidance::kSlack) {
-            g = {Tip::GO_FASTER, static_cast<uint8_t>(top)};
+            g = {Tip::GO_FASTER, static_cast<uint8_t>(Vo2Guidance::kMaxFrac * maxHrBpm)};
         } else if (p.hrLow > bottom + Vo2Guidance::kSlack) {
             g = {Tip::GO_EASIER, static_cast<uint8_t>(bottom)};
         } else if (p.r2 < kVo2High.r2 && p.steadySec >= kVo2Low.steadySec) {
