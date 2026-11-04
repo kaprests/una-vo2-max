@@ -222,7 +222,8 @@ class Vo2Card
 public:
     explicit Vo2Card(lv_obj_t* parent);
     /// @p utc 0 hides the date; @p calibrated marks the status "(cal.)".
-    void set(const Vo2Result& v, std::time_t utc = 0, bool calibrated = false);
+    /// @p oldVersion: the app version of an outdated result, shown with the date; 0 if current.
+    void set(const Vo2Result& v, std::time_t utc = 0, bool calibrated = false, uint32_t oldVersion = 0);
 
 private:
     lv_obj_t* mDate    = nullptr;

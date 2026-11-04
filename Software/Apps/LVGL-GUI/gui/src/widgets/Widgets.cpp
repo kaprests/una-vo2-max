@@ -480,13 +480,20 @@ Vo2Card::Vo2Card(lv_obj_t* parent)
     mDetails = Theme::label(parent, F::Regular14, "", 40, 180, 160);
 }
 
-void Vo2Card::set(const Vo2Result& v, std::time_t utc, bool calibrated)
+void Vo2Card::set(const Vo2Result& v, std::time_t utc, bool calibrated, uint32_t oldVersion)
 {
     char buf[24];
     Theme::setHidden(mDate, utc == 0);
     if (utc != 0) {
         Fmt::date(buf, sizeof(buf), utc);
-        lv_label_set_text(mDate, buf);
+        if (oldVersion != 0) {
+            char ver[12];
+            Fmt::version(ver, sizeof(ver), oldVersion);
+            lv_label_set_text_fmt(mDate, "%s  %s", buf, ver);
+        } else {
+            lv_label_set_text(mDate, buf);
+        }
+        lv_obj_set_style_text_color(mDate, Theme::rgb(oldVersion ? Color::GRAY : Color::WHITE), LV_PART_MAIN);
     }
 
     const bool ok = v.valid();
@@ -504,7 +511,7 @@ void Vo2Card::set(const Vo2Result& v, std::time_t utc, bool calibrated)
     Theme::setHidden(mUnit, !ok);
     Theme::setHidden(mDetails, !ok);
     lv_label_set_text(mStatus, vo2Status(v));
-    lv_obj_set_style_text_color(mStatus, Theme::rgb(vo2Color(v.confidence)), LV_PART_MAIN);
+    lv_obj_set_style_text_color(mStatus, Theme::rgb(oldVersion ? Color::GRAY : vo2Color(v.confidence)), LV_PART_MAIN);
 }
 
 } // namespace Widgets

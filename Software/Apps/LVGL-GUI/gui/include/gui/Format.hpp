@@ -149,6 +149,13 @@ inline void date(char* buf, size_t n, std::time_t utc)
     snprintf(buf, n, "%d %s %d", t.tm_mday, monthName(t.tm_mon), 1900 + t.tm_year);
 }
 
+/// "v0.1.2" from a version packed as vo2Version().
+inline void version(char* buf, size_t n, uint32_t v)
+{
+    snprintf(buf, n, "v%u.%u.%u", static_cast<unsigned>(v >> 16 & 0xFF), static_cast<unsigned>(v >> 8 & 0xFF),
+             static_cast<unsigned>(v & 0xFF));
+}
+
 /// "8 Oct" in local time.
 inline void dayMonth(char* buf, size_t n, std::time_t utc)
 {

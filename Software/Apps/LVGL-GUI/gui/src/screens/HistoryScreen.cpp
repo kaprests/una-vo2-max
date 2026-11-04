@@ -39,6 +39,12 @@ const char* viewName(View v)
     }
 }
 
+/// Results from a version whose confidence rules differ are grey.
+uint32_t runColor(const Vo2History::Entry& e)
+{
+    return e.outdated() ? Color::GRAY : Widgets::vo2Color(e.result.confidence);
+}
+
 /// Lab tests excluded by a calibration reset are dimmed.
 uint32_t labColor(const LabTests::Entry& e)
 {
@@ -129,7 +135,7 @@ void HistoryScreen::setLatest()
 {
     const Vo2History::Entry& latest     = mHistory.latest();
     const bool               calibrated = mCalibration.count > 0;
-    mLatest->set(latest.result, latest.utc, calibrated);
+    mLatest->set(latest.result, latest.utc, calibrated, latest.outdated() ? latest.appVersion() : 0);
 
     const bool hasLab = mLabs && !mLabs->empty();
     Theme::setHidden(mLatestLab, !hasLab);
@@ -160,7 +166,7 @@ void HistoryScreen::setView(View view)
     mListCount = 0;
     for (std::size_t i = 0; i < mSelection.count; ++i) {
         const Vo2History::Entry& e = *mSelection.points[i].entry;
-        mListRows[mListCount++] = {e.utc, e.result.vo2max, Widgets::vo2Color(e.result.confidence), false};
+        mListRows[mListCount++] = {e.utc, e.result.vo2max, runColor(e), false};
     }
     mLabMarks = mLabs ? Vo2Trend::labMarks(mSelection, *mLabs) : Vo2Trend::LabMarks{};
     for (std::size_t i = 0; mLabs && i < mLabs->count; ++i) {
@@ -216,12 +222,13 @@ void HistoryScreen::drawTrend()
         if (i >= s.count) {
             continue;
         }
-        const Vo2Result& r = s.points[i].entry->result;
+        const Vo2History::Entry& e = *s.points[i].entry;
+        const Vo2Result&         r = e.result;
         const int32_t x = xOf(s.points[i].x);
         const int32_t y = yOf(r.vo2max);
         mPoints[i] = {static_cast<lv_value_precise_t>(x), static_cast<lv_value_precise_t>(y)};
         lv_obj_set_pos(mDots[i], x - kDotR, y - kDotR);
-        lv_obj_set_style_bg_color(mDots[i], Theme::rgb(Widgets::vo2Color(r.confidence)), LV_PART_MAIN);
+        lv_obj_set_style_bg_color(mDots[i], Theme::rgb(runColor(e)), LV_PART_MAIN);
     }
     lv_line_set_points(mLine, mPoints.data(), static_cast<uint32_t>(s.count));
 
