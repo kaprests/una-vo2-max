@@ -3,6 +3,8 @@
 
 #include <gtest/gtest.h>
 
+#include "SDK/Tools/FirmwareVersion.hpp"
+
 namespace
 {
 using SDK::TestSupport::KernelFixture;
@@ -40,6 +42,7 @@ TEST(Vo2HistorySerializer, RoundTrips)
     Vo2History saved;
     saved.add(entry(1000, 48.5f, Confidence::LOW));
     saved.add(entry(2000, 51.2f, Confidence::HIGH));
+    saved.entries[1].version = vo2Version(0, 1, 2);
     ASSERT_TRUE(serializer.save(saved));
 
     Vo2History loaded;
@@ -50,6 +53,17 @@ TEST(Vo2HistorySerializer, RoundTrips)
     EXPECT_EQ(loaded.entries[0].result.confidence, Confidence::LOW);
     EXPECT_EQ(loaded.latest().utc, 2000);
     EXPECT_EQ(loaded.latest().result.confidence, Confidence::HIGH);
+    EXPECT_EQ(loaded.latest().version, vo2Version(0, 1, 2));
+}
+
+TEST(Vo2History, UntaggedAndOlderEntriesAreOutdated)
+{
+    EXPECT_EQ(vo2Version(1, 2, 3), SDK::ParseVersion("1.2.3").u32);
+    Vo2History::Entry e = entry(1, 50.0f);
+    EXPECT_EQ(e.appVersion(), kVo2UntaggedVersion);
+    EXPECT_TRUE(e.outdated());
+    e.version = kVo2ComparableSince;
+    EXPECT_FALSE(e.outdated());
 }
 
 TEST(Vo2HistorySerializer, SkipsInvalidEntries)
@@ -65,6 +79,7 @@ TEST(Vo2HistorySerializer, SkipsInvalidEntries)
     ASSERT_TRUE(Vo2HistorySerializer(fixture.kernel, kFile).load(loaded));
     ASSERT_EQ(loaded.count, 2u);
     EXPECT_EQ(loaded.entries[0].utc, 1);
+    EXPECT_EQ(loaded.entries[0].version, 0u);   // files from before the version tag
     EXPECT_EQ(loaded.entries[1].utc, 4);
 }
 

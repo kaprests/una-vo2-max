@@ -20,6 +20,7 @@
     },
     {
       "utc": 1764055800,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 46.3,
@@ -29,6 +30,7 @@
     },
     {
       "utc": 1765006200,
+      "ver": 258,
       "confidence": 1,
       "reason": 0,
       "vo2max": 47.0,
@@ -38,6 +40,7 @@
     },
     {
       "utc": 1765697400,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 47.1,
@@ -47,6 +50,7 @@
     },
     {
       "utc": 1766475000,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 46.2,
@@ -56,6 +60,7 @@
     },
     {
       "utc": 1767339000,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 48.1,
@@ -65,6 +70,7 @@
     },
     {
       "utc": 1768030200,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 46.6,
@@ -74,6 +80,7 @@
     },
     {
       "utc": 1768635000,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 46.8,
@@ -83,6 +90,7 @@
     },
     {
       "utc": 1769671800,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 47.0,
@@ -92,6 +100,7 @@
     },
     {
       "utc": 1770622200,
+      "ver": 258,
       "confidence": 1,
       "reason": 0,
       "vo2max": 49.0,
@@ -101,6 +110,7 @@
     },
     {
       "utc": 1771659000,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 49.1,
@@ -110,6 +120,7 @@
     },
     {
       "utc": 1772436600,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 47.7,
@@ -119,6 +130,7 @@
     },
     {
       "utc": 1773127800,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 49.6,
@@ -128,6 +140,7 @@
     },
     {
       "utc": 1773905400,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 50.1,
@@ -137,6 +150,7 @@
     },
     {
       "utc": 1774769400,
+      "ver": 258,
       "confidence": 1,
       "reason": 0,
       "vo2max": 50.5,
@@ -146,6 +160,7 @@
     },
     {
       "utc": 1775719800,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 48.9,
@@ -155,6 +170,7 @@
     },
     {
       "utc": 1776411000,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 50.3,
@@ -164,6 +180,7 @@
     },
     {
       "utc": 1777447800,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 50.9,
@@ -173,6 +190,7 @@
     },
     {
       "utc": 1778139000,
+      "ver": 258,
       "confidence": 1,
       "reason": 0,
       "vo2max": 49.3,
@@ -182,6 +200,7 @@
     },
     {
       "utc": 1779089400,
+      "ver": 258,
       "confidence": 1,
       "reason": 0,
       "vo2max": 49.8,
@@ -191,6 +210,7 @@
     },
     {
       "utc": 1779780600,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 51.1,
@@ -200,6 +220,7 @@
     },
     {
       "utc": 1780644600,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 51.0,
@@ -209,6 +230,7 @@
     },
     {
       "utc": 1781681400,
+      "ver": 258,
       "confidence": 1,
       "reason": 0,
       "vo2max": 50.5,
@@ -218,6 +240,7 @@
     },
     {
       "utc": 1782631800,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 51.1,
@@ -227,6 +250,7 @@
     },
     {
       "utc": 1783323000,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 51.8,
@@ -236,6 +260,7 @@
     },
     {
       "utc": 1784014200,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 52.7,
@@ -245,6 +270,7 @@
     },
     {
       "utc": 1784619000,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 53.3,
@@ -254,6 +280,7 @@
     },
     {
       "utc": 1785483000,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 53.1,
@@ -263,6 +290,7 @@
     },
     {
       "utc": 1786174200,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 52.2,
@@ -272,6 +300,7 @@
     },
     {
       "utc": 1787211000,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 51.8,
@@ -281,6 +310,7 @@
     },
     {
       "utc": 1788247800,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 52.7,
@@ -290,6 +320,7 @@
     },
     {
       "utc": 1789284600,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 52.6,
@@ -299,6 +330,7 @@
     },
     {
       "utc": 1789975800,
+      "ver": 258,
       "confidence": 2,
       "reason": 0,
       "vo2max": 53.8,
@@ -308,6 +340,7 @@
     },
     {
       "utc": 1790580600,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 54.5,
@@ -317,6 +350,7 @@
     },
     {
       "utc": 1791444600,
+      "ver": 258,
       "confidence": 3,
       "reason": 0,
       "vo2max": 54.3,

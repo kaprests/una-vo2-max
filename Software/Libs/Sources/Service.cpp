@@ -1137,7 +1137,7 @@ void Service::stopTrack(bool discard)
         SDK::send_msg<CustomMessage::Summary>(mKernel, &mSummary);
 
         if (mSummary.vo2.valid()) {
-            mVo2History.add({mSummary.utc, mSummary.vo2});
+            mVo2History.add({mSummary.utc, mSummary.vo2, SDK::ParseVersion(BUILD_VERSION).u32});
             if (!mVo2HistorySerializer.save(mVo2History)) {
                 LOG_ERROR("Can't save VO2 history\n");
             }
