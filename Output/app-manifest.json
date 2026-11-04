@@ -5,8 +5,8 @@
   ],
   "name": "VO2 Max",
   "icon": "icon.png",
-  "binary": "VO2Max_0.1.2.uapp",
-  "appVersion": "0.1.2",
+  "binary": "VO2Max_0.1.3.uapp",
+  "appVersion": "0.1.3",
   "minKernelVersion": "1.4.0",
   "requiredHardware": [
     "GPS",
