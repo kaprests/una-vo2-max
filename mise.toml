@@ -89,6 +89,23 @@ run = [
   "python tools/fit_csv.py \"$usage_fit\" | Software/Tests/build/vo2-replay \"$usage_max_hr\" \"$usage_interval\"",
 ]
 
+[tasks.analysis-data]
+description = "Download the Malaga treadmill dataset and verify it"
+run = """
+mkdir -p data_analysis/data/malaga_vo2_max && cd data_analysis/data/malaga_vo2_max
+url=https://physionet.org/files/treadmill-exercise-cardioresp/1.0.1
+for f in SHA256SUMS.txt LICENSE.txt subject-info.csv test_measure.csv; do curl -sSfLO "$url/$f"; done
+sha256sum -c SHA256SUMS.txt
+"""
+
+[tasks.analysis-test]
+description = "Run the analysis package tests"
+run = "VIRTUAL_ENV= uv run --project data_analysis pytest data_analysis/tests -q"
+
+[tasks.analysis]
+description = "Start JupyterLab for the analysis"
+run = "VIRTUAL_ENV= uv run --project data_analysis --group notebook jupyter lab --notebook-dir data_analysis"
+
 [tasks.test]
 description = "Build and run the host unit tests (Docs/unit-testing.md)"
 dir = "Software/Tests"

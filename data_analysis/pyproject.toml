@@ -1,0 +1,18 @@
+[project]
+name = "vo2-analysis"
+version = "0.1.0"
+description = "Offline evaluation of the VO2 max estimator against lab data"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "matplotlib",
+]
+
+[dependency-groups]
+dev = ["pytest"]
+notebook = ["jupyterlab"]
+
+[tool.uv]
+package = false
