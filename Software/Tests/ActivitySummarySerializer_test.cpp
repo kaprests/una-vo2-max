@@ -25,7 +25,7 @@ TEST(ActivitySummarySerializer, Vo2RoundTrips)
     EXPECT_EQ(loaded.vo2.confidence, Vo2::Confidence::MEDIUM);
     EXPECT_EQ(loaded.vo2.reason, Vo2::Reason::OK);
     EXPECT_FLOAT_EQ(loaded.vo2.vo2max, 52.5f);
-    EXPECT_EQ(loaded.vo2.steadySec, 840);
+    EXPECT_EQ(loaded.vo2.validSec, 840);
     EXPECT_FLOAT_EQ(loaded.vo2.hrRangeFrac, 0.18f);
     EXPECT_FLOAT_EQ(loaded.vo2.r2, 0.72f);
 }

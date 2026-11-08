@@ -957,8 +957,9 @@ void Service::processTrack()
             mCalibrator.ingestSample(cs);
         }
 
+        // The same speed the FIT record gets, so a replay sees what the watch saw.
         mVo2Estimator.addSample({mHrCounter.getCurrent(), static_cast<uint8_t>(mTrackData.hrTrustLevel),
-                                 mGpsSpeedValid ? mTrackData.speed : 0.0f,
+                                 mSpeedCounter.isValid() ? mSpeedCounter.getCurrent() : 0.0f,
                                  mGradeData.gradePct, mGradeData.gradeValid});
 
         // Save record to the FIT file
@@ -1227,6 +1228,7 @@ void Service::pauseTrack(bool pause)
         buildPartialSummary();
         SDK::send_msg<CustomMessage::Summary>(mKernel, &mSummary);
     } else if (!pause && mTrackState == Track::State::PAUSED) {
+        mVo2Estimator.skip(static_cast<uint32_t>(mTimeCounter.getTrailingPause()));
         mTimeCounter.resume();
         mDistanceCounter.resume();
         mSpeedCounter.resume();

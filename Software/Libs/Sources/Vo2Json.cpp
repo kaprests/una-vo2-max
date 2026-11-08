@@ -14,7 +14,7 @@ void Vo2Json::write(SDK::JsonStreamWriter& writer, const Vo2Result& v)
     writer.add("confidence", static_cast<uint8_t>(v.confidence));
     writer.add("reason",     static_cast<uint8_t>(v.reason));
     writer.add("vo2max",     v.vo2max);
-    writer.add("steady_sec", v.steadySec);
+    writer.add("valid_sec",  v.validSec);
     writer.add("hr_range",   v.hrRangeFrac);
     writer.add("r2",         v.r2);
 }
@@ -42,7 +42,7 @@ bool Vo2Json::read(const SDK::JsonStreamReader& reader, const char* path, Vo2Res
     r.confidence = static_cast<Vo2Result::Confidence>(confidence);
     r.reason     = static_cast<Vo2Result::Reason>(reason);
     get("vo2max",     r.vo2max);
-    get("steady_sec", r.steadySec);
+    get("valid_sec", r.validSec) || get("steady_sec", r.validSec);   // before 0.1.4
     get("hr_range",   r.hrRangeFrac);
     get("r2",         r.r2);
     v = r;

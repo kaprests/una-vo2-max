@@ -13,34 +13,34 @@
 
 #include "Vo2Result.hpp"
 
-/// Thresholds a result must meet to reach a confidence level.
+/// Thresholds a result must meet to reach a confidence level. They measure
+/// how well the run determines the line, not how close it is to a lab value.
 struct Vo2Level {
-    uint16_t steadySec;
-    float    hrRangeFrac; ///< HR range / max HR
-    float    r2;
+    float    hrRangeFrac; ///< Band HR range / max HR
+    uint8_t  bands;       ///< 5 bpm HR bands with enough data
+    uint16_t validSec;    ///< Seconds that went into the fit
 };
 
-inline constexpr Vo2Level kVo2Low   { 300, 0.10f, 0.30f};
-inline constexpr Vo2Level kVo2Medium{ 600, 0.15f, 0.60f};
-inline constexpr Vo2Level kVo2High  {1200, 0.20f, 0.80f};
+inline constexpr Vo2Level kVo2Low   {0.15f, 5,  600};
+inline constexpr Vo2Level kVo2Medium{0.20f, 7, 1200};
+inline constexpr Vo2Level kVo2High  {0.25f, 9, 1500};
 
 struct Vo2Progress {
     enum class State : uint8_t {
         NO_MAX_HR,
-        NO_HR,     ///< HR missing or untrusted.
-        UNUSABLE,  ///< Too slow, too fast or on a hill.
-        UNSTEADY,
-        SETTLING,  ///< HR catching up after a pace change.
+        NO_HR,       ///< HR missing or untrusted.
+        UNUSABLE,    ///< Too slow, or on a steep hill.
+        WARMING_UP,  ///< First seconds of the run, not used.
         COUNTING,
     };
 
-    State                 state      = State::SETTLING;
+    State                 state      = State::WARMING_UP;
     Vo2Result::Confidence confidence = Vo2Result::Confidence::NONE;
-    uint8_t               settleSec  = 0; ///< Until counting starts.
-    uint8_t               hrLow      = 0; ///< Counted HR range, bpm; 0 if none.
+    Vo2Result::Reason     reason     = Vo2Result::Reason::TOO_SHORT;
+    uint8_t               hrLow      = 0; ///< Band HR range, bpm; 0 if none.
     uint8_t               hrHigh     = 0;
-    uint16_t              steadySec  = 0; ///< Counted seconds.
-    float                 r2         = 0.0f;
+    uint8_t               bands      = 0;
+    uint16_t              validSec   = 0;
 };
 
 #endif // VO2_PROGRESS_HPP

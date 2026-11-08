@@ -3,9 +3,15 @@
  * @file    Vo2MaxEstimator.hpp
  * @brief   VO2 max from a submaximal run (heart rate vs. speed).
  *
- * Fed one sample per second. Keeps steady, flat, trusted samples, fits
- * HR = a + b * speed, extends the line to max HR, and converts that speed to
- * VO2 max with the ACSM running equation.
+ * Fed one sample per second. HR follows speed with a delay, so speed is passed
+ * through a first-order lag before it is paired with HR. Usable seconds are
+ * grouped into 5 bpm HR bands; a weighted line HR = a + b * speed through the
+ * band means is extended to max HR, and that speed is converted to VO2 max
+ * with the ACSM running equation. Capping each band's weight keeps long easy
+ * running from outweighing short hard efforts.
+ *
+ * Speed is corrected for grade with the ACSM grade term (4.5 % more effort per
+ * 1 % uphill). See data_analysis/RESULTS.md for how the method was chosen.
  *
  * No SDK dependencies; fixed memory regardless of run length.
  ******************************************************************************
@@ -27,21 +33,22 @@ public:
     struct Config {
         using Level = Vo2Level;
 
-        float    minSpeedMps   = 1.8f;   ///< Slower is walking.
-        float    maxSpeedMps   = 6.5f;   ///< Faster is sprinting or GPS error.
-        float    maxGradePct   = 3.0f;
-        float    minHrBpm      = 60.0f;
-        uint8_t  minHrTrust    = 1;
-        float    steadyDriftMps= 0.25f;  ///< Max change between window halves.
-        float    steadyJumpMps = 0.5f;   ///< Max newest speed off window mean.
-        uint16_t settleSec     = 60;     ///< HR lag after a pace change.
-        uint8_t  maxGapSec     = 5;      ///< Unusable seconds skipped before a stretch breaks.
-        float    minMaxHr      = 120.0f; ///< Lower max HR counts as not set.
-        uint16_t minBinSec     = 20;     ///< Counted seconds before an HR bin widens the range.
+        float    minSpeedMps    = 1.8f;   ///< Lagged speed; slower is walking.
+        float    maxSpeedMps    = 6.5f;   ///< Faster is GPS error; the sample is skipped.
+        float    maxGradePct    = 8.0f;   ///< Smoothed; steeper is excluded.
+        float    minHrBpm       = 60.0f;
+        uint8_t  minHrTrust     = 1;
+        float    speedLagSec    = 40.0f;  ///< HR response to a change in speed.
+        float    gradeLagSec    = 30.0f;  ///< Smooths barometric grade noise.
+        uint16_t warmupSec      = 90;     ///< Start of the run, not used.
+        uint16_t minBandSec     = 20;     ///< Shorter bands are ignored.
+        uint16_t maxBandWeight  = 60;     ///< Band weight cap, seconds.
+        float    maxVo2Se       = 4.0f;   ///< Larger standard error: no estimate.
+        float    minMaxHr       = 120.0f; ///< Lower max HR counts as not set.
 
-        Level minimum = kVo2Low;
-        Level medium  = kVo2Medium;
-        Level high    = kVo2High;
+        Level low    = kVo2Low;
+        Level medium = kVo2Medium;
+        Level high   = kVo2High;
     };
 
     struct Sample {
@@ -52,60 +59,51 @@ public:
         bool    gradeValid = false;
     };
 
-    static constexpr std::size_t kWindowSec  = 30;
-    static constexpr uint8_t     kMaxHrTrust = 3; ///< Trust levels 1..3 are valid.
+    static constexpr uint8_t kMaxHrTrust = 3; ///< Trust levels 1..3 are valid.
 
     Vo2MaxEstimator();
     explicit Vo2MaxEstimator(const Config& config);
 
     void        reset();
+    /// @p seconds without samples (a pause): the lags decay as if standing.
+    void        skip(uint32_t seconds);
     void        addSample(const Sample& s);
     Vo2Result   result(float maxHrBpm) const;
     Vo2Progress progress(float maxHrBpm) const;
 
 private:
-    /// Least-squares fit of y on x, accumulated as running sums.
-    struct LinearFit {
-        uint32_t n = 0;
-        double   sx = 0, sy = 0, sxx = 0, sxy = 0, syy = 0;
+    static constexpr float       kBandMinBpm = 60.0f;
+    static constexpr float       kBandBpm    = 5.0f;
+    static constexpr std::size_t kBands      = 32; ///< Up to 220 bpm.
 
-        void   add(double x, double y);
-        double varX() const  { return sxx - sx * sx / n; }
-        double varY() const  { return syy - sy * sy / n; }
-        double covXY() const { return sxy - sx * sy / n; }
-        double slope() const { return covXY() / varX(); }
-        double r2() const    { return covXY() * covXY() / (varX() * varY()); }
-        double intercept(double slope) const { return (sy - slope * sx) / n; }
-    };
-
-    /// HR range of the counted samples: centres of the outermost bins with
-    /// at least minBinSec, so brief spikes do not widen it.
     struct Band {
-        float low  = 0.0f;
-        float high = 0.0f;
+        uint16_t sec    = 0;
+        float    speed  = 0.0f; ///< Sums
+        float    hr     = 0.0f;
     };
 
-    static constexpr float       kBinMinBpm = 60.0f;
-    static constexpr float       kBinBpm    = 5.0f;
-    static constexpr std::size_t kBins      = 32; ///< Up to 220 bpm.
+    /// Bands with enough data, as weight and means.
+    struct Point {
+        float weight = 0.0f;
+        float speed  = 0.0f;
+        float hr     = 0.0f;
+    };
+    struct Points {
+        std::array<Point, kBands> items{};
+        uint8_t                   count = 0;
+        float                     low   = 0.0f; ///< Lowest and highest mean HR
+        float                     high  = 0.0f;
+    };
 
-    bool hrUsable(const Sample& s) const;
-    bool speedUsable(const Sample& s) const;
-    bool windowSteady(float newest) const;
-    void breakStretch();
-    Band hrBand() const;
+    Points points() const;
 
-    Config mConfig;
-
-    std::array<float, kWindowSec> mWindow{}; ///< Speed ring buffer.
-    std::size_t mWindowCount = 0;
-    std::size_t mWindowHead  = 0;            ///< Oldest entry once full.
-    uint16_t    mSteadySec   = 0;
-    uint8_t     mGapSec      = 0;
-
-    LinearFit mFit; ///< x = speed, y = HR
-    std::array<uint16_t, kBins> mHrBins{}; ///< Counted seconds per HR bin.
-    Vo2Progress::State mState = Vo2Progress::State::SETTLING;
+    Config      mConfig;
+    float       mSpeed    = 0.0f; ///< Lagged, grade-corrected
+    float       mGrade    = 0.0f; ///< Smoothed
+    uint32_t    mElapsed  = 0;
+    uint32_t    mValidSec = 0;
+    std::array<Band, kBands> mBands{};
+    Vo2Progress::State mState = Vo2Progress::State::WARMING_UP;
 };
 
 #endif // VO2MAX_ESTIMATOR_HPP

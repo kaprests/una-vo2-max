@@ -55,8 +55,6 @@ void tipText(char* buf, std::size_t size, const Vo2Guidance& g, const Vo2Progres
         case Tip::SET_MAX_HR:  std::snprintf(buf, size, "%s", Strings::kNoMaxHr); break;
         case Tip::NO_HR:       std::snprintf(buf, size, "Weak HR signal"); break;
         case Tip::FLAT_GROUND: std::snprintf(buf, size, "Run steady on\nflat ground"); break;
-        case Tip::HOLD_STEADY: std::snprintf(buf, size, "Hold a steady pace"); break;
-        case Tip::SETTLING:    std::snprintf(buf, size, "Keep pace\nHR settling %u s", p.settleSec); break;
         case Tip::GO_FASTER:   std::snprintf(buf, size, "Faster: HR %u\nhold for 3 min", g.targetHr); break;
         case Tip::GO_EASIER:   std::snprintf(buf, size, "Easier: HR %u\nhold for 3 min", g.targetHr); break;
         case Tip::HR_OFF_PACE: std::snprintf(buf, size, "HR not following\npace"); break;
@@ -137,7 +135,7 @@ void TrackScreen::buildFaceVo2()
     Theme::box(f, kSteadyX, kSteadyY, kSteadyW, kSteadyH, Color::GRAY_DARK, LV_RADIUS_CIRCLE);
     mSteadyFill = Theme::box(f, kSteadyX, kSteadyY, 0, kSteadyH, Color::TEAL, LV_RADIUS_CIRCLE);
     for (const Vo2Level& level : {kVo2Low, kVo2Medium}) {
-        Theme::box(f, kSteadyX + kSteadyW * level.steadySec / kVo2High.steadySec, kSteadyY - 3, 2, kSteadyH + 6,
+        Theme::box(f, kSteadyX + kSteadyW * level.validSec / kVo2High.validSec, kSteadyY - 3, 2, kSteadyH + 6,
                    Color::WHITE);
     }
     mVo2Tip = Theme::label(f, F::Medium18, "", 20, 156, 200);
@@ -255,8 +253,8 @@ void TrackScreen::onTrackData(const Track::Data& data)
     lv_label_set_text(mVo2Level, estimated ? Widgets::vo2Status(Vo2Result{p.confidence}) : "No estimate yet");
     lv_obj_set_style_text_color(mVo2Level, Theme::rgb(Widgets::vo2Color(p.confidence)), LV_PART_MAIN);
     mHrStrip->set(maxHr, p.hrLow, p.hrHigh, g.targetHr, data.hr);
-    lv_label_set_text_fmt(mSteadyText, "Steady %u min", p.steadySec / 60u);
-    lv_obj_set_width(mSteadyFill, kSteadyW * std::min<int32_t>(p.steadySec, kVo2High.steadySec) / kVo2High.steadySec);
+    lv_label_set_text_fmt(mSteadyText, "Steady %u min", p.validSec / 60u);
+    lv_obj_set_width(mSteadyFill, kSteadyW * std::min<int32_t>(p.validSec, kVo2High.validSec) / kVo2High.validSec);
     tipText(buf, sizeof(buf), g, p);
     lv_label_set_text(mVo2Tip, buf);
 }

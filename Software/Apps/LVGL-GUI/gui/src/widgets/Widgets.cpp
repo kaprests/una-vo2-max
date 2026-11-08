@@ -501,7 +501,7 @@ void Vo2Card::set(const Vo2Result& v, std::time_t utc, bool calibrated, uint32_t
         Fmt::fixed(buf, sizeof(buf), v.vo2max, 1);
         lv_label_set_text(mValue, buf);
         lv_label_set_text_fmt(mDetails, "%u min  HR %u%%  fit %u%%",
-                              static_cast<unsigned>(v.steadySec / 60),
+                              static_cast<unsigned>(v.validSec / 60),
                               static_cast<unsigned>(v.hrRangeFrac * 100.0f + 0.5f),
                               static_cast<unsigned>(v.r2 * 100.0f + 0.5f));
     } else {
