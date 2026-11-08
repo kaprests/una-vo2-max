@@ -1,7 +1,8 @@
 // Replays a recorded run through the estimator and guidance, printing what the
-// run's data face would have shown. Input on stdin: seconds,speed_mps,hr_bpm
+// run's data face would have shown. Input on stdin: seconds,speed_mps,hr_bpm,grade_pct
 // (tools/fit_csv.py). Usage: vo2-replay <max HR> [print interval s]
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
@@ -60,15 +61,19 @@ int main(int argc, char** argv)
     std::deque<float> speeds;
     long              t     = 0;
     float             speed = 0.0f, hr = 0.0f;
+    char              grade[16] = {};
 
     std::printf("  time    HR  state       sec  band     target  tip\n");
-    while (std::scanf("%ld,%f,%f", &t, &speed, &hr) == 3) {
+    while (std::scanf("%ld,%f,%f,%15s", &t, &speed, &hr, grade) == 4) {
+        const float gradePct   = std::strtof(grade, nullptr);
+        const bool  gradeValid = !std::isnan(gradePct);
         speeds.push_back(speed);
         if (speeds.size() > kSmoothSec) {
             speeds.pop_front();
         }
         const float smooth = std::accumulate(speeds.begin(), speeds.end(), 0.0f) / speeds.size();
-        est.addSample({hr, static_cast<uint8_t>(hr > 0 ? Vo2MaxEstimator::kMaxHrTrust : 0), smooth, 0.0f, false});
+        est.addSample({hr, static_cast<uint8_t>(hr > 0 ? Vo2MaxEstimator::kMaxHrTrust : 0), smooth,
+                       gradeValid ? gradePct : 0.0f, gradeValid});
 
         if (t % interval == 0) {
             const Vo2Progress p = est.progress(maxHr);

@@ -704,6 +704,8 @@ ActivityWriter::RecordData Service::prepareRecordData()
     fitRecord.hrSource     = hasHeartRate ? mHrSource : 0;
     fitRecord.hrOpticalBpm = mHrOpticalBpm;
     fitRecord.hrExternalBpm= mHrExternalBpm;
+    fitRecord.gradePct     = mGradeData.gradePct;
+    fitRecord.gradeValid   = mGradeData.gradeValid;
 
     // Both samples must be checked every call; evaluate separately to avoid short-circuit.
     const bool socReady     = mBatterySoc.isDue();

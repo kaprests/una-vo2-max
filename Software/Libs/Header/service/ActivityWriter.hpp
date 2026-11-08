@@ -62,6 +62,8 @@ public:
         uint16_t    batteryVoltage = 0;     // mV
         float       cadenceSpm     = 0.0f;  // steps/min
         float       stepLengthM    = 0.0f;  // single-step distance, m
+        float       gradePct       = 0.0f;  // barometric terrain grade, %
+        bool        gradeValid     = false;
 
     private:
         static constexpr uint8_t mask(Field f)
@@ -168,6 +170,7 @@ private:
         DF_HR_SOURCE       = 4,
         DF_HR_OPTICAL      = 5,
         DF_HR_EXTERNAL     = 6,
+        DF_GRADE           = 7,
     };
 
     /// Flush + marker-refresh cadence during recording (seconds of record time).

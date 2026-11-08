@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Print a FIT activity's records as CSV: seconds,speed_mps,hr_bpm.
+"""Print a FIT activity's records as CSV: seconds,speed_mps,hr_bpm,grade_pct.
 
 Minimal FIT decoder: enough for the record messages the app writes.
-Missing values are printed as 0. Usage: fit_csv.py <file.fit>
+Missing speed and HR are printed as 0, missing or invalid grade as nan (files
+from before 0.1.4 have none). Usage: fit_csv.py <file.fit>
 """
 
 import struct
@@ -10,6 +11,7 @@ import sys
 
 RECORD = 20
 TIMESTAMP, HEART_RATE, ENHANCED_SPEED = 253, 3, 73
+DEV_GRADE = 7  # ActivityWriter::DF_GRADE, sint16 in 0.1 %
 FORMATS = {0: "B", 1: "b", 2: "B", 0x83: "h", 0x84: "H", 0x85: "i", 0x86: "I",
            0x8B: "H", 0x8C: "I", 0x0A: "B", 0x0D: "B", 0x88: "f", 0x89: "d"}
 INVALID = {"B": 0xFF, "H": 0xFFFF, "I": 0xFFFFFFFF}
@@ -44,7 +46,12 @@ def records(data):
                 if value != INVALID.get(fmt.upper()):
                     values[num] = value
             pos += size
-        pos += sum(size for _, size, _ in dev)
+        for num, size, _ in dev:
+            if num == DEV_GRADE and size == 2:
+                grade = struct.unpack(endian + "h", data[pos:pos + 2])[0]
+                if grade != 0x7FFF:
+                    values["grade"] = grade / 10
+            pos += size
         if mesg == RECORD:
             yield values
 
@@ -52,4 +59,4 @@ def records(data):
 start = None
 for r in records(open(sys.argv[1], "rb").read()):
     start = r[TIMESTAMP] if start is None else start
-    print(f"{r[TIMESTAMP] - start},{r.get(ENHANCED_SPEED, 0) / 1000:.3f},{r.get(HEART_RATE, 0)}")
+    print(f"{r[TIMESTAMP] - start},{r.get(ENHANCED_SPEED, 0) / 1000:.3f},{r.get(HEART_RATE, 0)},{r.get('grade', 'nan')}")

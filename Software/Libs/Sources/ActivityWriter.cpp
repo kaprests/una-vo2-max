@@ -11,6 +11,7 @@
 #include "SDK/JSON/JsonStreamWriter.hpp"
 
 #include <cassert>
+#include <cmath>
 #include <cstring>
 
 #define LOG_MODULE_PRX      "ActivityWriter"
@@ -89,6 +90,7 @@ void ActivityWriter::start(const AppInfo& info)
     writeFieldDescription(DF_HR_SOURCE, "hr_source", nullptr, fit::BaseType::UInt8);
     writeFieldDescription(DF_HR_OPTICAL, "hr_optical", "bpm", fit::BaseType::UInt8);
     writeFieldDescription(DF_HR_EXTERNAL, "hr_external", "bpm", fit::BaseType::UInt8);
+    writeFieldDescription(DF_GRADE, "grade", "0.1%", fit::BaseType::SInt16);
 
     // event
     mFit->defineMessage(L_EVENT, fit::mesgNum(fit::MesgNum::Event),
@@ -135,19 +137,19 @@ void ActivityWriter::start(const AppInfo& info)
 void ActivityWriter::defineRecordMessages()
 {
     const DevFieldDef hr3[] = {
-        {DF_HR_SOURCE, 1, 0}, {DF_HR_OPTICAL, 1, 0}, {DF_HR_EXTERNAL, 1, 0},
+        {DF_HR_SOURCE, 1, 0}, {DF_HR_OPTICAL, 1, 0}, {DF_HR_EXTERNAL, 1, 0}, {DF_GRADE, 2, 0},
     };
     const DevFieldDef batt5[] = {
         {DF_BATTERY_LEVEL, 1, 0}, {DF_BATTERY_VOLTAGE, 2, 0},
-        {DF_HR_SOURCE, 1, 0}, {DF_HR_OPTICAL, 1, 0}, {DF_HR_EXTERNAL, 1, 0},
+        {DF_HR_SOURCE, 1, 0}, {DF_HR_OPTICAL, 1, 0}, {DF_HR_EXTERNAL, 1, 0}, {DF_GRADE, 2, 0},
     };
 
-    // Plain record (HR/cadence only) + 3 HR developer fields.
+    // Plain record (HR/cadence only) + HR and grade developer fields.
     mFit->defineMessage(L_RECORD, fit::mesgNum(fit::MesgNum::Record),
         {fit::field::Record::Timestamp,
          kRecordCommonTail[0], kRecordCommonTail[1], kRecordCommonTail[2],
          kRecordCommonTail[3], kRecordCommonTail[4], kRecordCommonTail[5]},
-        {hr3[0], hr3[1], hr3[2]});
+        {hr3[0], hr3[1], hr3[2], hr3[3]});
 
     // + GPS.
     mFit->defineMessage(L_RECORD_G, fit::mesgNum(fit::MesgNum::Record),
@@ -155,14 +157,14 @@ void ActivityWriter::defineRecordMessages()
          fit::field::Record::PositionLat, fit::field::Record::PositionLong,
          kRecordCommonTail[0], kRecordCommonTail[1], kRecordCommonTail[2],
          kRecordCommonTail[3], kRecordCommonTail[4], kRecordCommonTail[5]},
-        {hr3[0], hr3[1], hr3[2]});
+        {hr3[0], hr3[1], hr3[2], hr3[3]});
 
-    // + battery (5 developer fields).
+    // + battery developer fields.
     mFit->defineMessage(L_RECORD_B, fit::mesgNum(fit::MesgNum::Record),
         {fit::field::Record::Timestamp,
          kRecordCommonTail[0], kRecordCommonTail[1], kRecordCommonTail[2],
          kRecordCommonTail[3], kRecordCommonTail[4], kRecordCommonTail[5]},
-        {batt5[0], batt5[1], batt5[2], batt5[3], batt5[4]});
+        {batt5[0], batt5[1], batt5[2], batt5[3], batt5[4], batt5[5]});
 
     // + GPS + battery.
     mFit->defineMessage(L_RECORD_GB, fit::mesgNum(fit::MesgNum::Record),
@@ -170,7 +172,7 @@ void ActivityWriter::defineRecordMessages()
          fit::field::Record::PositionLat, fit::field::Record::PositionLong,
          kRecordCommonTail[0], kRecordCommonTail[1], kRecordCommonTail[2],
          kRecordCommonTail[3], kRecordCommonTail[4], kRecordCommonTail[5]},
-        {batt5[0], batt5[1], batt5[2], batt5[3], batt5[4]});
+        {batt5[0], batt5[1], batt5[2], batt5[3], batt5[4], batt5[5]});
 }
 
 void ActivityWriter::writeFieldDescription(uint8_t devFieldNum, const char* name,
@@ -255,6 +257,8 @@ void ActivityWriter::addRecord(const RecordData& record)
         d.u8(record.batteryLevel).u16(record.batteryVoltage);
     }
     d.u8(record.hrSource).u8(record.hrOpticalBpm).u8(record.hrExternalBpm);
+    d.i16(record.gradeValid ? static_cast<int16_t>(std::lround(record.gradePct * 10.0f))
+                            : static_cast<int16_t>(fit::baseTypeInvalid(fit::BaseType::SInt16)));
 
     d.write();
 
