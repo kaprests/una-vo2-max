@@ -11,9 +11,9 @@ from enum import IntEnum
 import numpy as np
 
 MIN_VO2, MAX_VO2 = 20.0, 90.0
-WINDOW_SEC = 30
 MAX_HR_TRUST = 3
 BIN_MIN_BPM, BIN_BPM, BINS = 60.0, 5.0, 32
+GRADE_COST = 0.045  # ACSM: 4.5 % more effort per 1 % uphill
 
 
 def acsm_vo2(speed_mps):
@@ -30,27 +30,28 @@ class Confidence(IntEnum):
 
 @dataclass(frozen=True)
 class Level:
-    steady_sec: int
     hr_range_frac: float
-    r2: float
+    bands: int
+    valid_sec: int
 
 
 @dataclass(frozen=True)
 class Config:
     min_speed: float = 1.8
     max_speed: float = 6.5
-    max_grade: float = 3.0
+    max_grade: float = 8.0
     min_hr: float = 60.0
     min_hr_trust: int = 1
-    steady_drift: float = 0.25
-    steady_jump: float = 0.5
-    settle_sec: int = 60
-    max_gap_sec: int = 5
+    speed_lag: float = 40.0
+    grade_lag: float = 30.0
+    warmup_sec: int = 90
+    min_band_sec: int = 20
+    max_band_weight: int = 60
+    max_vo2_se: float = 4.0
     min_max_hr: float = 120.0
-    min_bin_sec: int = 20
-    low: Level = Level(300, 0.10, 0.30)
-    medium: Level = Level(600, 0.15, 0.60)
-    high: Level = Level(1200, 0.20, 0.80)
+    low: Level = Level(0.15, 5, 600)
+    medium: Level = Level(0.20, 7, 1200)
+    high: Level = Level(0.25, 9, 1500)
 
 
 @dataclass
@@ -58,7 +59,7 @@ class Result:
     reason: str = "TOO_SHORT"
     confidence: Confidence = Confidence.NONE
     vo2max: float = 0.0
-    steady_sec: int = 0
+    valid_sec: int = 0
     hr_range_frac: float = 0.0
     r2: float = 0.0
 
@@ -70,83 +71,69 @@ class Estimator:
     cfg: Config = field(default_factory=Config)
 
     def __post_init__(self):
-        self.window = []
-        self.steady = 0
-        self.gap = 0
-        self.speeds = []
-        self.hrs = []
-        self.bins = np.zeros(BINS, dtype=int)
+        self.speed = 0.0
+        self.grade = 0.0
+        self.elapsed = 0
+        self.valid = 0
+        self.sec = np.zeros(BINS, dtype=int)
+        self.sum_speed = np.zeros(BINS)
+        self.sum_hr = np.zeros(BINS)
 
-    def _break(self):
-        self.window.clear()
-        self.steady = 0
-        self.gap = 0
+    def skip(self, seconds):
+        self.speed *= np.exp(-seconds / self.cfg.speed_lag)
+        self.grade *= np.exp(-seconds / self.cfg.grade_lag)
 
     def add(self, hr, speed, trust=MAX_HR_TRUST, grade=0.0, grade_valid=False):
         c = self.cfg
+        self.elapsed += 1
+        self.grade += (1 - np.exp(-1 / c.grade_lag)) * ((grade if grade_valid else 0.0) - self.grade)
+        if speed <= c.max_speed:
+            effort = max(speed * (1 + GRADE_COST * self.grade), 0.0)
+            self.speed += (1 - np.exp(-1 / c.speed_lag)) * (effort - self.speed)
         hr_ok = hr >= c.min_hr and c.min_hr_trust <= trust <= MAX_HR_TRUST
-        speed_ok = c.min_speed <= speed <= c.max_speed and (not grade_valid or abs(grade) <= c.max_grade)
-        if not (hr_ok and speed_ok):
-            self.gap += 1
-            if self.gap > c.max_gap_sec:
-                self._break()
+        if not hr_ok or self.elapsed <= c.warmup_sec or self.speed < c.min_speed or abs(self.grade) > c.max_grade:
             return
-        self.gap = 0
-        self.window.append(speed)
-        if len(self.window) > WINDOW_SEC:
-            self.window.pop(0)
-        if len(self.window) < WINDOW_SEC:
-            return
-        half = WINDOW_SEC // 2
-        older = sum(self.window[:half]) / half
-        newer = sum(self.window[half:]) / (WINDOW_SEC - half)
-        mean = sum(self.window) / WINDOW_SEC
-        if abs(newer - older) > c.steady_drift or abs(speed - mean) > c.steady_jump:
-            self.steady = 0
-        elif self.steady < c.settle_sec:
-            self.steady += 1
-        else:
-            self.speeds.append(speed)
-            self.hrs.append(hr)
-            self.bins[min(max(int((hr - BIN_MIN_BPM) / BIN_BPM), 0), BINS - 1)] += 1
+        b = min(max(int((hr - BIN_MIN_BPM) / BIN_BPM), 0), BINS - 1)
+        self.sec[b] += 1
+        self.sum_speed[b] += self.speed
+        self.sum_hr[b] += hr
+        self.valid += 1
 
-    def counted(self):
-        """Counted samples as (speed, hr) arrays."""
-        return np.array(self.speeds), np.array(self.hrs)
-
-    def band(self):
-        full = np.flatnonzero(self.bins >= self.cfg.min_bin_sec)
-        if not full.size:
-            return 0.0, 0.0
-        centre = lambda b: BIN_MIN_BPM + (b + 0.5) * BIN_BPM
-        return centre(full[0]), centre(full[-1])
+    def points(self):
+        """Bands with enough data: rows of (weight, mean speed, mean HR)."""
+        sel = self.sec >= self.cfg.min_band_sec
+        n = self.sec[sel]
+        return np.c_[np.minimum(n, self.cfg.max_band_weight), self.sum_speed[sel] / n, self.sum_hr[sel] / n]
 
     def result(self, max_hr):
-        c, r = self.cfg, Result()
-        x, y = self.counted()
-        r.steady_sec = len(x)
+        c, r = self.cfg, Result(valid_sec=self.valid)
         if max_hr < c.min_max_hr:
             r.reason = "NO_MAX_HR"
             return r
-        low, high = self.band()
-        r.hr_range_frac = (high - low) / max_hr
-        if len(x) < max(c.low.steady_sec, 2):
+        p = self.points()
+        r.hr_range_frac = (p[:, 2].max() - p[:, 2].min()) / max_hr if len(p) else 0.0
+        if r.valid_sec < c.low.valid_sec:
             return r
-        if r.hr_range_frac < c.low.hr_range_frac or x.var() <= 0 or y.var() <= 0:
+        if len(p) < c.low.bands or r.hr_range_frac < c.low.hr_range_frac:
             r.reason = "LOW_HR_RANGE"
             return r
-        slope, intercept, r.r2 = fit(x, y)
-        if slope <= 0:
+        w, x, y = p.T
+        slope, intercept, r.r2 = fit(x, y, w)
+        if not slope > 0:
             r.reason = "BAD_SLOPE"
             return r
-        if r.r2 < c.low.r2:
-            r.reason = "POOR_FIT"
-            return r
-        vo2 = float(acsm_vo2((max_hr - intercept) / slope))
+        speed = (max_hr - intercept) / slope
+        vo2 = float(acsm_vo2(speed))
         if not MIN_VO2 <= vo2 <= MAX_VO2:
             r.reason = "OUT_OF_RANGE"
             return r
-        meets = lambda l: r.steady_sec >= l.steady_sec and r.hr_range_frac >= l.hr_range_frac and r.r2 >= l.r2
+        mx = np.average(x, weights=w)
+        s2 = np.sum(w * (y - intercept - slope * x) ** 2) / (len(p) - 2)
+        var = s2 * (1 / w.sum() + (speed - mx) ** 2 / np.sum(w * (x - mx) ** 2)) / slope ** 2
+        if 12 * np.sqrt(var) > c.max_vo2_se:
+            r.reason = "POOR_FIT"
+            return r
+        meets = lambda l: r.hr_range_frac >= l.hr_range_frac and len(p) >= l.bands and r.valid_sec >= l.valid_sec
         r.vo2max, r.reason = vo2, "OK"
         r.confidence = Confidence.HIGH if meets(c.high) else Confidence.MEDIUM if meets(c.medium) else Confidence.LOW
         return r

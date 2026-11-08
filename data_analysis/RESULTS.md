@@ -59,6 +59,19 @@ Adding age, sex and BMI to a method gets RMSE down to 5.9–6.4 and r up to 0.57
    the reference. The rankings are a pessimistic bound, and the size of a person's change
    over time can't be validated here.
 
+## Update for app 0.1.4
+
+- **The app now uses the band-averages-on-lagged-speed method** ("band_lag" above). Its
+  speed starts from zero rather than from the first sample, and it adds confidence
+  gates.
+- **`compare.py` now runs the 0.1.4 estimator in its "app" row.** The table above shows
+  the method before 0.1.4 and can be reproduced from commit `37fdd89`.
+- **The new gates need at least 600 s of usable data.** That excludes most of these lab
+  ramps, which last about 9 minutes before reaching 95 % of max HR: 516 of 548 tests are
+  "too short".
+  - That's intended: the gates are sized for outdoor runs of 30 minutes or more.
+  - Its accuracy here is the band_lag row.
+
 ## Limits
 
 - **Treadmill ramps, not outdoor steady running:** no GPS noise, no hills, chest-strap

@@ -3,72 +3,66 @@
 import numpy as np
 import pytest
 
-from vo2est.estimator import WINDOW_SEC, Config, Confidence, Estimator, run
+from vo2est.estimator import Config, Confidence, Estimator, MAX_HR_TRUST
 
 MAX_HR = 190.0
-A, B = 70.0, 25.0  # HR = 70 + 25 v -> v at max HR = 4.8 m/s -> VO2 = 61.1
+A, B = 70.0, 25.0  # HR = 70 + 25 * lagged speed -> 4.8 m/s at max HR -> VO2 61.1
 EXPECTED_VO2 = 61.1
-PACES = [2.2, 2.8, 3.4, 4.0]
-LEAD_IN = WINDOW_SEC - 1 + Config().settle_sec
 
 
-def paces(seconds, values=PACES):
-    v = np.repeat(values, seconds)
-    return A + B * v, v
+def feed(est, speeds, noise=0.0, seed=7, slope=B, intercept=A):
+    """A runner whose HR follows speed through the estimator's lag."""
+    rng, a, lagged = np.random.default_rng(seed), 1 - np.exp(-1 / Config().speed_lag), 0.0
+    for v in speeds:
+        lagged += a * (v - lagged)
+        est.add(intercept + slope * lagged + noise * rng.normal(), v, MAX_HR_TRUST)
+    return est
 
 
-def test_clean_run_gives_expected_vo2_with_high_confidence():
-    _, r = run(*paces(600), MAX_HR)
+def ramp(seconds):
+    return 2.0 + 2.4 * np.arange(seconds) / seconds
+
+
+def test_clean_ramp_gives_expected_vo2_with_high_confidence():
+    r = feed(Estimator(), ramp(2400)).result(MAX_HR)
     assert r.reason == "OK"
     assert r.confidence == Confidence.HIGH
-    assert r.vo2max == pytest.approx(EXPECTED_VO2, abs=0.1)
-    assert r.r2 == pytest.approx(1.0, abs=1e-4)
+    assert r.vo2max == pytest.approx(EXPECTED_VO2, abs=0.3)
+    assert r.r2 > 0.99
 
 
-def test_lead_in_is_excluded():
-    _, r = run(*paces(400, [3.0]), MAX_HR)
-    assert r.steady_sec == 400 - LEAD_IN
+@pytest.mark.parametrize("minutes, level", [(12, Confidence.LOW), (23, Confidence.MEDIUM), (28, Confidence.HIGH)])
+def test_confidence_grows_with_running_time(minutes, level):
+    assert feed(Estimator(), ramp(minutes * 60)).result(MAX_HR).confidence == level
 
 
-def test_single_pace_has_too_little_hr_range():
-    _, r = run(*paces(1200, [3.0]), MAX_HR)
+def test_long_easy_running_does_not_shift_the_estimate():
+    def with_easy(seconds):
+        return feed(Estimator(), np.r_[ramp(1800), np.full(seconds, 2.6)], noise=5.0).result(MAX_HR).vo2max
+    assert with_easy(5 * 60) == pytest.approx(with_easy(40 * 60), abs=0.5)
+
+
+def test_single_pace_gives_no_estimate():
+    r = feed(Estimator(), np.full(2400, 3.0), noise=2.5).result(MAX_HR)
     assert r.reason == "LOW_HR_RANGE"
-
-
-def test_max_hr_not_set():
-    _, r = run(*paces(600), 0.0)
-    assert r.reason == "NO_MAX_HR"
     assert r.confidence == Confidence.NONE
 
 
+def test_max_hr_not_set():
+    assert feed(Estimator(), ramp(2400)).result(0.0).reason == "NO_MAX_HR"
+
+
 def test_too_short():
-    _, r = run(*paces(200, [3.0]), MAX_HR)
-    assert r.reason == "TOO_SHORT"
+    assert feed(Estimator(), ramp(300)).result(MAX_HR).reason == "TOO_SHORT"
 
 
 def test_hr_falling_with_speed_is_rejected():
-    v = np.repeat(PACES, 600)
-    _, r = run(220.0 - B * v, v, MAX_HR)
-    assert r.reason == "BAD_SLOPE"
-
-
-def test_long_gap_breaks_stretch():
-    est = Estimator()
-    for h, v in zip(*paces(400, [3.0])):
-        est.add(h, v)
-    for _ in range(Config().max_gap_sec + 1):
-        est.add(0.0, 0.0)
-    for h, v in zip(*paces(100, [3.0])):
-        est.add(h, v)
-    assert est.result(MAX_HR).steady_sec == 400 - LEAD_IN + 100 - LEAD_IN
+    assert feed(Estimator(), ramp(2400), slope=-B, intercept=240.0).result(MAX_HR).reason == "BAD_SLOPE"
 
 
 def test_brief_hr_spike_does_not_widen_range():
-    est = Estimator()
-    for h, v in zip(*paces(600, [2.8, 3.4])):
-        est.add(h, v)
+    est = feed(Estimator(), ramp(2400))
     before = est.result(MAX_HR).hr_range_frac
     for _ in range(10):
-        est.add(185.0, 3.4)
-    assert before == pytest.approx(15.0 / MAX_HR, abs=1e-4)
+        est.add(185.0, 3.0)
     assert est.result(MAX_HR).hr_range_frac == pytest.approx(before)
