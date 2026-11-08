@@ -27,7 +27,7 @@ inline constexpr uint32_t kVo2UntaggedVersion = vo2Version(0, 1, 1);
 
 /// First version whose results are comparable with the current ones. Bump it
 /// only in a release that changes how results are computed.
-inline constexpr uint32_t kVo2ComparableSince = vo2Version(0, 1, 2);
+inline constexpr uint32_t kVo2ComparableSince = vo2Version(0, 1, 4);
 
 struct Vo2History {
     static constexpr std::size_t kCapacity = 160;   ///< About a year at 3 runs a week.

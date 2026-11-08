@@ -15,6 +15,7 @@ Vo2History::Entry run(std::time_t day, float vo2, Confidence c = Confidence::HIG
     e.utc               = day * kDay;
     e.result.confidence = c;
     e.result.vo2max     = vo2;
+    e.version           = kVo2ComparableSince;
     return e;
 }
 
@@ -104,6 +105,17 @@ TEST_P(Vo2CalibrationTest, IgnoredLabTestsDoNotCalibrate)
     const Anchors a = anchors(h, labs, m);
     ASSERT_EQ(a.count, 1u);
     EXPECT_EQ(a.items[0].utc, 200 * kDay);
+}
+
+TEST_P(Vo2CalibrationTest, OutdatedRunsDoNotCalibrate)
+{
+    Vo2History h;
+    Vo2History::Entry old = run(0, 50.0f);
+    old.version = 0;
+    h.add(old);
+    LabTests labs;
+    labs.add({0, 52.0f});
+    EXPECT_EQ(anchors(h, labs, m).count, 0u);
 }
 
 INSTANTIATE_TEST_SUITE_P(Methods, Vo2CalibrationTest,

@@ -72,7 +72,7 @@ struct Anchors {
     std::size_t rejected = 0;
 };
 
-/// One anchor per lab test that has runs of Medium confidence or better
+/// One anchor per lab test that has current-method runs of Medium confidence or better
 /// within kWindowSec. Oldest first.
 inline Anchors anchors(const Vo2History& h, const LabTests& labs, const Model& m)
 {
@@ -86,7 +86,7 @@ inline Anchors anchors(const Vo2History& h, const LabTests& labs, const Model& m
         std::size_t n = 0;
         for (std::size_t i = 0; i < h.count; ++i) {
             const Vo2History::Entry& e = h.entries[i];
-            if (e.result.confidence >= Vo2Result::Confidence::MEDIUM
+            if (!e.outdated() && e.result.confidence >= Vo2Result::Confidence::MEDIUM
                     && e.utc >= lab.utc - kWindowSec && e.utc <= lab.utc + kWindowSec) {
                 fits[n++] = m.fit(e.result.vo2max, lab.vo2max);
             }

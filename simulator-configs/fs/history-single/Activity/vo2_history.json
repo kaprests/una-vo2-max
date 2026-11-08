@@ -2,11 +2,11 @@
   "entries": [
     {
       "utc": 1791444600,
-      "ver": 258,
+      "ver": 260,
       "confidence": 3,
       "reason": 0,
       "vo2max": 54.3,
-      "steady_sec": 1500,
+      "valid_sec": 1500,
       "hr_range": 0.22,
       "r2": 0.86
     }
