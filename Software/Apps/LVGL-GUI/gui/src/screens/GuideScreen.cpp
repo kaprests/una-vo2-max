@@ -21,7 +21,7 @@ constexpr const char* kText[] = {
     "While running,\nnavigate to the\nGUIDE screen for\nlive guidance.",
     "On GUIDE:\nwhite tick = live HR\nteal = range so far\nbox = HR to aim for",
     "At first only the\nwhite tick shows.\nTeal and box appear\nonce data starts\ncounting.",
-    "After a pace\nchange, HR needs\n1-2 min to settle\nbefore data counts.",
+    "Run 20+ min for\na Medium result,\n25+ min with a\nwide HR range\nfor High.",
 };
 } // namespace
 

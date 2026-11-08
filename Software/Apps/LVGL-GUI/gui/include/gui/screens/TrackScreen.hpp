@@ -70,8 +70,8 @@ private:
 
     // VO2 data face
     lv_obj_t* mVo2Level   = nullptr;
-    lv_obj_t* mSteadyText = nullptr;
-    lv_obj_t* mSteadyFill = nullptr;
+    lv_obj_t* mDataText = nullptr;
+    lv_obj_t* mDataFill = nullptr;
     lv_obj_t* mVo2Tip     = nullptr;
     std::unique_ptr<Widgets::HrStrip> mHrStrip;
 
