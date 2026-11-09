@@ -273,4 +273,8 @@ namespace CustomMessage {
 
 #pragma pack(pop)
 
+// Messages come from kernel pools of at most 256 bytes; a larger one is
+// dropped silently on the watch (Docs/sdk-overview.md). By value, so checked.
+static_assert(sizeof(CustomMessage::TrackDataUpd) <= 256, "TrackDataUpd exceeds the kernel message pool");
+
 #endif // COMMANDS_HPP
