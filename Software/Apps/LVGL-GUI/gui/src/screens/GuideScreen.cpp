@@ -20,7 +20,7 @@ constexpr const char* kText[] = {
     "Run a few min\neach at easy,\nmoderate and hard.\nA wide HR range\nmatters most.",
     "While running,\nnavigate to the\nGUIDE screen for\nlive guidance.",
     "On GUIDE:\nnumber, tick = live HR\nteal = range so far\nbox = HR to aim for",
-    "At first only the\nwhite tick shows.\nTeal and box appear\nonce data starts\ncounting.",
+    "Teal and box\nappear after about\n2 min of running.\nThe number turns\nteal on target.",
     "Medium needs\n20+ min and a 20%\nHR range. High:\n25+ min and 25%.",
 };
 } // namespace

@@ -12,6 +12,7 @@
 #include "gui/Assets.hpp"
 #include "gui/Format.hpp"
 #include "gui/Strings.hpp"
+#include "Vo2Guidance.hpp"
 
 #include <cstdio>
 
@@ -157,7 +158,6 @@ namespace
 {
 constexpr int32_t kStripH   = 8;
 constexpr float   kStripMin = 0.6f;  ///< Of max HR, at the left end.
-constexpr float   kTargetHalfBpm = 3.0f;
 } // namespace
 
 HrStrip::HrStrip(lv_obj_t* parent, int32_t x, int32_t y, int32_t w)
@@ -198,8 +198,8 @@ void HrStrip::set(float maxHr, uint8_t low, uint8_t high, uint8_t target, float 
     lv_obj_set_width(mRange, std::max(xOf(high) - xOf(low), kStripH));
 
     Theme::setHidden(mTarget, target == 0);
-    lv_obj_set_x(mTarget, xOf(target - kTargetHalfBpm));
-    lv_obj_set_width(mTarget, xOf(target + kTargetHalfBpm) - xOf(target - kTargetHalfBpm));
+    lv_obj_set_x(mTarget, xOf(target - Vo2Guidance::kOnTarget));
+    lv_obj_set_width(mTarget, xOf(target + Vo2Guidance::kOnTarget) - xOf(target - Vo2Guidance::kOnTarget));
 
     Theme::setHidden(mCursor, hr <= 0.0f || maxHr <= 0.0f);
     lv_obj_set_x(mCursor, xOf(hr) - 1);

@@ -13,6 +13,7 @@
 #include "gui/Strings.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 
@@ -29,7 +30,7 @@ constexpr uint16_t kFaceCount = App::MenuNav::TrackView::ID_COUNT;
 
 // VO2 data face: the bar of usable running time spans the High threshold.
 constexpr int32_t kDataX = 50;
-constexpr int32_t kDataY = 136;
+constexpr int32_t kDataY = 142;
 constexpr int32_t kDataW = 140;
 constexpr int32_t kDataH = 6;
 
@@ -133,9 +134,10 @@ void TrackScreen::buildFaceVo2()
 {
     lv_obj_t* f = mFaceVo2 = Theme::container(mRoot, 0, 0, 240, 240);
     Theme::label(f, F::Italic18, "GUIDE", 60, 11, 120);
-    mVo2Level   = Theme::label(f, F::Medium18, "", 20, 34, 200);
-    mHrStrip    = std::make_unique<Widgets::HrStrip>(f, 30, 72, 180);
-    mDataText = Theme::label(f, F::Regular16, "", 20, 110, 200);
+    mVo2Hr      = Theme::label(f, F::SemiBold40, Strings::kNoValue, 75, 29, 90);
+    mVo2Source  = Theme::label(f, F::Regular14, "", 160, 50, 45, LV_TEXT_ALIGN_LEFT);
+    mHrStrip    = std::make_unique<Widgets::HrStrip>(f, 30, 88, 180);
+    mDataText   = Theme::label(f, F::Regular16, "", 20, 118, 200);
     Theme::box(f, kDataX, kDataY, kDataW, kDataH, Color::GRAY_DARK, LV_RADIUS_CIRCLE);
     mDataFill = Theme::box(f, kDataX, kDataY, 0, kDataH, Color::TEAL, LV_RADIUS_CIRCLE);
     for (const Vo2Level& level : {kVo2Low, kVo2Medium}) {
@@ -246,18 +248,23 @@ void TrackScreen::onTrackData(const Track::Data& data)
     mHrZone->setHR(data.hr < App::Display::kMinHR ? 0.0f : data.hr, mHrThresholds, mHrThresholdCount);
 
     mHrSource = data.hrSource;
-    lv_label_set_text(mHrSourceLabel, hrSourceText(mHrSource));
+    const char* source = data.hr < App::Display::kMinHR ? "" : hrSourceText(mHrSource);
+    lv_label_set_text(mHrSourceLabel, source);
     updateHrIcon();
 
     // VO2 data face
     const Vo2Progress& p         = data.vo2;
     const float        maxHr     = mModel.getMaxHrBpm();
     const Vo2Guidance  g         = vo2Guidance(p, maxHr);
-    const bool         estimated = p.confidence != Vo2Result::Confidence::NONE;
-    lv_label_set_text(mVo2Level, estimated ? Widgets::vo2Status(Vo2Result{p.confidence}) : "No estimate yet");
-    lv_obj_set_style_text_color(mVo2Level, Theme::rgb(Widgets::vo2Color(p.confidence)), LV_PART_MAIN);
+    const bool         onTarget  = g.targetHr && std::fabs(data.hr - g.targetHr) <= Vo2Guidance::kOnTarget;
+    Fmt::heartRate(buf, sizeof(buf), data.hr);
+    lv_label_set_text(mVo2Hr, buf);
+    lv_obj_set_style_text_color(mVo2Hr, Theme::rgb(onTarget ? Color::TEAL : Color::WHITE), LV_PART_MAIN);
+    lv_label_set_text(mVo2Source, source);
     mHrStrip->set(maxHr, p.hrLow, p.hrHigh, g.targetHr, data.hr);
-    lv_label_set_text_fmt(mDataText, "Data %u min", p.validSec / 60u);
+    static const char* const kLevel[] = {"No estimate", "Low", "Medium", "High"};
+    lv_label_set_text_fmt(mDataText, "%s, %u min", kLevel[static_cast<int>(p.confidence)], p.validSec / 60u);
+    lv_obj_set_style_text_color(mDataText, Theme::rgb(Widgets::vo2Color(p.confidence)), LV_PART_MAIN);
     lv_obj_set_width(mDataFill, kDataW * std::min<int32_t>(p.validSec, kVo2High.validSec) / kVo2High.validSec);
     tipText(buf, sizeof(buf), g, p);
     lv_label_set_text(mVo2Tip, buf);

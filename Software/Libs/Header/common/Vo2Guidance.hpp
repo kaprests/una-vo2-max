@@ -32,6 +32,7 @@ struct Vo2Guidance {
     static constexpr float kMinFrac = 0.60f; ///< Of max HR: lowest target.
     static constexpr float kMaxFrac = 0.90f; ///< Highest target.
     static constexpr int   kSlack   = 3;     ///< bpm a range end may fall short.
+    static constexpr int   kOnTarget = 3;    ///< bpm either side of the target that count as on it.
 
     Tip     tip      = Tip::KEEP_GOING;
     uint8_t targetHr = 0; ///< HR to hold next, bpm; 0 if none.

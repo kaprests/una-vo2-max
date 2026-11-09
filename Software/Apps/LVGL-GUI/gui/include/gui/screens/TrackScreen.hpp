@@ -69,8 +69,9 @@ private:
     std::unique_ptr<Widgets::HeartRateZone> mHrZone;
 
     // VO2 data face
-    lv_obj_t* mVo2Level   = nullptr;
-    lv_obj_t* mDataText = nullptr;
+    lv_obj_t* mVo2Hr      = nullptr;
+    lv_obj_t* mVo2Source  = nullptr;
+    lv_obj_t* mDataText   = nullptr;
     lv_obj_t* mDataFill = nullptr;
     lv_obj_t* mVo2Tip     = nullptr;
     std::unique_ptr<Widgets::HrStrip> mHrStrip;
