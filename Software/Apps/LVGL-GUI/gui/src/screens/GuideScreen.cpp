@@ -17,11 +17,11 @@ namespace
 {
 constexpr const char* kText[] = {
     "Set max HR in\nthe UNA app.\nRun on flat ground.\nWarm up 10 min easy.",
-    "Hold each pace\n3+ min, then\nchange it. Cover\neasy, moderate\nand hard.",
+    "Run a few min\neach at easy,\nmoderate and hard.\nA wide HR range\nmatters most.",
     "While running,\nnavigate to the\nGUIDE screen for\nlive guidance.",
-    "On GUIDE:\nwhite tick = live HR\nteal = range so far\nbox = HR to aim for",
+    "On GUIDE:\nnumber, tick = live HR\nteal = range so far\nbox = HR to aim for",
     "At first only the\nwhite tick shows.\nTeal and box appear\nonce data starts\ncounting.",
-    "Run 20+ min for\na Medium result,\n25+ min with a\nwide HR range\nfor High.",
+    "Medium needs\n20+ min and a 20%\nHR range. High:\n25+ min and 25%.",
 };
 } // namespace
 

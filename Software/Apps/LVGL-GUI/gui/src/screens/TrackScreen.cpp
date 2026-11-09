@@ -55,9 +55,9 @@ void tipText(char* buf, std::size_t size, const Vo2Guidance& g, const Vo2Progres
         case Tip::SET_MAX_HR:  std::snprintf(buf, size, "%s", Strings::kNoMaxHr); break;
         case Tip::NO_HR:       std::snprintf(buf, size, "Weak HR signal"); break;
         case Tip::FLAT_GROUND: std::snprintf(buf, size, "Too slow or steep\nto count"); break;
-        case Tip::GO_FASTER:   std::snprintf(buf, size, "Faster: HR %u\nhold for 3 min", g.targetHr); break;
-        case Tip::GO_EASIER:   std::snprintf(buf, size, "Easier: HR %u\nhold for 3 min", g.targetHr); break;
-        case Tip::HR_OFF_PACE: std::snprintf(buf, size, "Hold each pace\nlonger"); break;
+        case Tip::GO_FASTER:   std::snprintf(buf, size, "Faster: HR %u\nfor a few min", g.targetHr); break;
+        case Tip::GO_EASIER:   std::snprintf(buf, size, "Easier: HR %u\nfor a few min", g.targetHr); break;
+        case Tip::HR_OFF_PACE: std::snprintf(buf, size, "Spread your\nHR range"); break;
         case Tip::KEEP_GOING: {
             const unsigned left = p.validSec < kVo2Medium.validSec ? (kVo2Medium.validSec - p.validSec + 59) / 60 : 0;
             std::snprintf(buf, size, left ? "Keep going\n%u min more" : "Keep going", left);

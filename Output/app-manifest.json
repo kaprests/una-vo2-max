@@ -13,7 +13,7 @@
     "HR"
   ],
   "stravaExport": true,
-  "description": "Estimate of VO2 max from heart rate and pacing data during a steady outdoor run. Enter max HR (required) and optionally VO2 max lab results in the UNA app. Early version: Only minimal testing has been conducted on a real watch, so treat results as indicative.",
+  "description": "Estimate of VO2 max from heart rate and pace during an outdoor run. Run at a few different effort levels; the GUIDE screen shows what data you still need. Enter max HR (required) and optionally VO2 max lab results in the UNA app. Early version, tested on one watch, so treat results as indicative.",
   "id": "E3FF7265E4DF8E81",
   "supportsLaps": true,
   "supportsDistance": true,
