@@ -137,7 +137,7 @@ void TrackScreen::buildFaceVo2()
     mVo2Hr      = Theme::label(f, F::SemiBold40, Strings::kNoValue, 75, 29, 90);
     mVo2Source  = Theme::label(f, F::Regular14, "", 160, 50, 45, LV_TEXT_ALIGN_LEFT);
     mHrStrip    = std::make_unique<Widgets::HrStrip>(f, 30, 88, 180);
-    mDataText   = Theme::label(f, F::Regular16, "", 20, 118, 200);
+    mDataText   = Theme::label(f, F::Regular16, "", 10, 118, 220);
     Theme::box(f, kDataX, kDataY, kDataW, kDataH, Color::GRAY_DARK, LV_RADIUS_CIRCLE);
     mDataFill = Theme::box(f, kDataX, kDataY, 0, kDataH, Color::TEAL, LV_RADIUS_CIRCLE);
     for (const Vo2Level& level : {kVo2Low, kVo2Medium}) {
@@ -262,8 +262,8 @@ void TrackScreen::onTrackData(const Track::Data& data)
     lv_obj_set_style_text_color(mVo2Hr, Theme::rgb(onTarget ? Color::TEAL : Color::WHITE), LV_PART_MAIN);
     lv_label_set_text(mVo2Source, source);
     mHrStrip->set(maxHr, p.hrLow, p.hrHigh, g.targetHr, data.hr);
-    static const char* const kLevel[] = {"No estimate", "Low", "Medium", "High"};
-    lv_label_set_text_fmt(mDataText, "%s, %u min", kLevel[static_cast<int>(p.confidence)], p.validSec / 60u);
+    static const char* const kLevel[] = {"No est.", "Low", "Medium", "High"};
+    lv_label_set_text_fmt(mDataText, "%s, %u min counted", kLevel[static_cast<int>(p.confidence)], p.validSec / 60u);
     lv_obj_set_style_text_color(mDataText, Theme::rgb(Widgets::vo2Color(p.confidence)), LV_PART_MAIN);
     lv_obj_set_width(mDataFill, kDataW * std::min<int32_t>(p.validSec, kVo2High.validSec) / kVo2High.validSec);
     tipText(buf, sizeof(buf), g, p);

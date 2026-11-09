@@ -21,7 +21,7 @@ constexpr const char* kText[] = {
     "While running,\nnavigate to the\nGUIDE screen for\nlive guidance.",
     "On GUIDE:\nnumber, tick = live HR\nteal = range so far\nbox = HR to aim for",
     "Teal and box\nappear after about\n2 min of running.\nThe number turns\nteal on target.",
-    "Medium needs\n20+ min and a 20%\nHR range. High:\n25+ min and 25%.",
+    "Medium needs 20+\nmin counted and a\n20% HR range.\nHigh: 25+ min\nand 25%.",
 };
 } // namespace
 
